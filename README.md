@@ -1,12 +1,14 @@
 # Agent UI
 
-A modern chat interface for AgentOS built with Next.js, Tailwind CSS, and TypeScript. This template provides a ready-to-use UI for connecting to and interacting with your AgentOS instances through the Agno platform.
+A modern chat interface for AgentOS built with Next.js, Tailwind CSS, and TypeScript. This template provides a ready-to-use UI for connecting to and interacting with your AgentOS instances with support for both HTTP and WebSocket connections.
 
 <img src="https://agno-public.s3.us-east-1.amazonaws.com/assets/agent_ui_banner.svg" alt="agent-ui" style="border-radius: 10px; width: 100%; max-width: 800px;" />
 
 ## Features
 
 - 🔗 **AgentOS Integration**: Seamlessly connect to local and live AgentOS instances
+- 🔌 **Dual Connection Modes**: Support for both HTTP and WebSocket connections
+- 🔐 **Authentication Support**: Automatic token management with refresh capabilities
 - 💬 **Modern Chat Interface**: Clean design with real-time streaming support
 - 🧩 **Tool Calls Support**: Visualizes agent tool calls and their results
 - 🧠 **Reasoning Steps**: Displays agent reasoning process (when available)
@@ -15,33 +17,27 @@ A modern chat interface for AgentOS built with Next.js, Tailwind CSS, and TypeSc
 - 🎨 **Customizable UI**: Built with Tailwind CSS for easy styling
 - 🧰 **Built with Modern Stack**: Next.js, TypeScript, shadcn/ui, Framer Motion, and more
 
-## Version Support
+## Connection Modes
 
-- **Main Branch**: Supports Agno v2.x (recommended)
-- **v1 Branch**: Supports Agno v1.x for legacy compatibility
+This UI supports two connection modes:
+
+- **WebSocket Mode** (Default): Real-time bidirectional communication with automatic reconnection and token refresh
+- **HTTP Mode**: Traditional REST API with streaming support for agent/team interactions
 
 ## Getting Started
 
 ### Prerequisites
 
-Before setting up Agent UI, you need a running AgentOS instance. If you haven't created one yet, check out our [Creating Your First OS](/agent-os/creating-your-first-os) guide.
+Before setting up Agent UI, you need a running AgentOS instance. The UI supports connecting to any compatible backend server.
 
-> **Note**: Agent UI connects to AgentOS instances through the Agno platform. Make sure your AgentOS is running before attempting to connect.
+> **Note**: Make sure your backend server is running before attempting to connect.
 
 ### Installation
-
-### Automatic Installation (Recommended)
-
-```bash
-npx create-agent-ui@latest
-```
-
-### Manual Installation
 
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/agno-agi/agent-ui.git
+git clone https://github.com/mingqxu7/agent-ui.git
 cd agent-ui
 ```
 
@@ -59,63 +55,94 @@ pnpm dev
 
 4. Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-## Connecting to Your AgentOS
+## Connecting to Your Backend
 
-Agent UI connects directly to your AgentOS instance, allowing you to interact with your agents through a modern chat interface.
+Agent UI connects directly to your backend instance, allowing you to interact with your agents through a modern chat interface.
 
-> **Prerequisites**: You need a running AgentOS instance before you can connect Agent UI to it. If you haven't created one yet, check out our [Creating Your First OS](https://docs.agno.com/agent-os/creating-your-first-os) guide.
+> **Prerequisites**: You need a running backend server instance before you can connect Agent UI to it.
 
 ## Step-by-Step Connection Process
 
 ### 1. Configure the Endpoint
 
-By default, Agent UI connects to `http://localhost:7777`. You can easily change this by:
+By default, Agent UI connects to `http://localhost:9000`. You can easily change this by:
 
 1. Hovering over the endpoint URL in the left sidebar
 2. Clicking the edit option to modify the connection settings
 
-### 2. Choose Your Environment
+### 2. Choose Your Connection Mode
 
-- **Local Development**: Use `http://localhost:7777` (default) or your custom local port
-- **Production**: Enter your production AgentOS HTTPS URL
+The UI supports two connection modes that persist in your browser:
 
-> **Warning**: Make sure your AgentOS is actually running on the specified endpoint before attempting to connect.
+- **WebSocket Mode** (Default): For real-time bidirectional communication
+  - Automatic reconnection on connection loss
+  - Automatic token refresh
+  - Lower latency for interactive conversations
 
-### 3. Configure Authentication (Optional)
+- **HTTP Mode**: For traditional REST API interactions
+  - Agent and team selection required
+  - Event-stream based responses
+  - Compatible with standard HTTP endpoints
 
-If your AgentOS instance requires authentication, you can configure it in two ways:
+You can toggle between modes in the sidebar settings.
 
-#### Option 1: Environment Variable (Recommended)
+### 3. Choose Your Environment
+
+- **Local Development**: Use `http://localhost:9000` (default) or your custom local port
+- **Production**: Enter your production backend HTTPS URL
+
+> **Warning**: Make sure your backend server is actually running on the specified endpoint before attempting to connect.
+
+### 4. Configure Authentication
+
+Authentication is handled automatically in WebSocket mode:
+
+#### WebSocket Mode (Automatic)
+
+- Tokens are automatically fetched from the `/api/token` endpoint
+- Automatic refresh before expiration
+- Stored in browser localStorage
+- No manual configuration needed
+
+#### HTTP Mode (Manual)
+
+You can configure authentication tokens in two ways:
+
+**Option 1: Environment Variable**
 
 Set the `OS_SECURITY_KEY` environment variable:
 
 ```bash
-# In your .env.local file or shell environment
+# In your .env.local file
 NEXT_PUBLIC_OS_SECURITY_KEY=your_auth_token_here
 ```
 
-> **Note**: This uses the same environment variable as AgentOS, so if you're running both on the same machine, you only need to set it once. The token will be automatically loaded when the application starts.
-
-#### Option 2: UI Configuration
+**Option 2: UI Configuration**
 
 1. In the left sidebar, locate the "Auth Token" section
 2. Click on the token field to edit it
 3. Enter your authentication token
-4. The token will be securely stored and included in all API requests
+4. The token will be stored and included in all API requests
 
-> **Security Note**: Authentication tokens are stored locally in global store and are included as Bearer tokens in API requests to your AgentOS instance.
+> **Security Note**: Authentication tokens are stored locally and included as Bearer tokens in API requests.
 
-### 4. Test the Connection
+### 5. Test the Connection
 
 Once you've configured the endpoint:
 
-1. The Agent UI will automatically attempt to connect to your AgentOS
-2. If successful, you'll see your agents available in the chat interface
-3. If there are connection issues, check that your AgentOS is running and accessible. Check out the troubleshooting guide [here](https://docs.agno.com/faq/agentos-connection)
+1. The Agent UI will automatically attempt to connect to your backend
+2. Check the connection status indicator in the sidebar (green = connected)
+3. In WebSocket mode, you can start chatting immediately
+4. In HTTP mode, select an agent or team before chatting
+
+## Documentation
+
+- **[SETUP.md](./SETUP.md)**: Detailed setup instructions and configuration guide
+- **[WEBSOCKET_INTEGRATION.md](./WEBSOCKET_INTEGRATION.md)**: WebSocket implementation details and architecture
 
 ## Contributing
 
-Contributions are welcome! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for contribution guidelines.
+Contributions are welcome! Please feel free to submit issues and pull requests.
 
 ## License
 
