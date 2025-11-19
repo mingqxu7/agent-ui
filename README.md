@@ -135,10 +135,46 @@ Once you've configured the endpoint:
 3. In WebSocket mode, you can start chatting immediately
 4. In HTTP mode, select an agent or team before chatting
 
+## Deployment
+
+### Deploy to Vercel
+
+The easiest way to deploy Agent UI is using Vercel:
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fmingqxu7%2Fagent-ui)
+
+**Quick Deploy Steps:**
+
+1. Click the "Deploy with Vercel" button above (or visit [vercel.com/new](https://vercel.com/new))
+2. Import your Git repository
+3. Select `agent-ui` as the root directory (if in a monorepo)
+4. Configure environment variables (optional):
+   - `NEXT_PUBLIC_OS_SECURITY_KEY` - Default authentication token
+   - `NEXT_PUBLIC_AGENTOS_URL` - Default backend URL
+5. Click "Deploy"
+
+**Important Notes:**
+- Your backend must be accessible from the internet
+- Configure CORS on your backend to allow your Vercel domain
+- WebSocket connections require wss:// (secure WebSocket over HTTPS)
+
+For detailed deployment instructions, see [VERCEL_DEPLOYMENT.md](./VERCEL_DEPLOYMENT.md).
+
+### Other Deployment Options
+
+Agent UI is a standard Next.js application and can be deployed to:
+- Netlify
+- Railway
+- Cloudflare Pages
+- Docker
+- Any platform supporting Next.js 15
+
 ## Documentation
 
 - **[SETUP.md](./SETUP.md)**: Detailed setup instructions and configuration guide
 - **[WEBSOCKET_INTEGRATION.md](./WEBSOCKET_INTEGRATION.md)**: WebSocket implementation details and architecture
+- **[VERCEL_DEPLOYMENT.md](./VERCEL_DEPLOYMENT.md)**: Complete guide for deploying to Vercel
+- **[CLAUDE.md](./CLAUDE.md)**: Developer guide for working with this codebase
 
 ## Contributing
 

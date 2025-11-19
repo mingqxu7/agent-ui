@@ -95,7 +95,7 @@ export const useStore = create<Store>()(
             typeof messages === 'function' ? messages(state.messages) : messages
         })),
       chatInputRef: { current: null },
-      selectedEndpoint: 'http://localhost:9000',
+      selectedEndpoint: process.env.NEXT_PUBLIC_AGENTOS_URL || 'http://localhost:9000',
       setSelectedEndpoint: (selectedEndpoint) =>
         set(() => ({ selectedEndpoint })),
       authToken: '',
