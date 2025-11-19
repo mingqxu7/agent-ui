@@ -1,6 +1,8 @@
 import { useCallback } from 'react'
 import { toast } from 'sonner'
 
+import { generateUUID } from '@/lib/utils'
+
 import { useStore } from '../store'
 
 import { AgentDetails, TeamDetails, type ChatMessage } from '@/types/os'
@@ -75,7 +77,7 @@ const useChatActions = () => {
         const newMessages = [...prevMessages, message]
 
         // Generate session ID if not exists
-        const currentSessionId = explicitSessionId || sessionId || crypto.randomUUID()
+        const currentSessionId = explicitSessionId || sessionId || generateUUID()
         if (!sessionId && !explicitSessionId) {
           setSessionId(currentSessionId)
         } else if (explicitSessionId && !sessionId) {

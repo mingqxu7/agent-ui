@@ -50,67 +50,7 @@ const ModelDisplay = ({ model }: { model: string }) => (
   </div>
 )
 
-const Endpoint = () => {
-  const {
-    selectedEndpoint,
-    isEndpointActive,
-  } = useStore()
-  const { initialize } = useChatActions()
-  const [isMounted, setIsMounted] = useState(false)
-  const [isRotating, setIsRotating] = useState(false)
 
-  useEffect(() => {
-    setIsMounted(true)
-  }, [])
-
-  const getStatusColor = (isActive: boolean) =>
-    isActive ? 'bg-positive' : 'bg-destructive'
-
-  const handleRefresh = async () => {
-    setIsRotating(true)
-    await initialize()
-    setTimeout(() => setIsRotating(false), 500)
-  }
-
-  return (
-    <div className="flex flex-col items-start gap-2">
-      <div className="text-xs font-medium uppercase text-primary">AgentOS</div>
-      <div className="flex w-full items-center gap-1">
-        <div
-          className="relative flex h-9 w-full items-center justify-between rounded-xl border border-primary/15 bg-accent p-3 uppercase"
-        >
-          <div
-            className="absolute inset-0 flex items-center justify-between px-3"
-          >
-            <p className="text-xs font-medium text-muted">
-              {isMounted
-                ? truncateText(selectedEndpoint, 21) ||
-                ENDPOINT_PLACEHOLDER
-                : 'http://localhost:9000'}
-            </p>
-            <div
-              className={`size-2 shrink-0 rounded-full ${getStatusColor(isEndpointActive)}`}
-            />
-          </div>
-        </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleRefresh}
-          className="hover:cursor-pointer hover:bg-transparent"
-        >
-          <motion.div
-            key={isRotating ? 'rotating' : 'idle'}
-            animate={{ rotate: isRotating ? 360 : 0 }}
-            transition={{ duration: 0.5, ease: 'easeInOut' }}
-          >
-            <Icon type="refresh" size="xs" />
-          </motion.div>
-        </Button>
-      </div>
-    </div>
-  )
-}
 
 const Sidebar = ({
   hasEnvToken,
@@ -184,7 +124,7 @@ const Sidebar = ({
         />
         {isMounted && (
           <>
-            <Endpoint />
+
             {isEndpointActive && (
               <>
                 <motion.div

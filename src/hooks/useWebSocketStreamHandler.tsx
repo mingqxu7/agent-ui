@@ -1,5 +1,5 @@
 import { useCallback, useRef, useEffect } from 'react'
-
+import { generateUUID } from '@/lib/utils'
 import useChatActions from '@/hooks/useChatActions'
 import { useStore } from '../store'
 import { constructEndpointUrl } from '@/lib/constructEndpointUrl'
@@ -176,65 +176,36 @@ const useWebSocketStreamHandler = ({ shouldAutoConnect = true }: { shouldAutoCon
   )
 
   const ensureConnection = useCallback(() => {
-    if (!isConnectedRef.current) {
-      const endpointUrl = constructEndpointUrl(selectedEndpoint)
+    const endpointUrl = constructEndpointUrl(selectedEndpoint)
 
-      connect({
-        endpoint: endpointUrl,
-        authToken,
-        onMessage: (data) => {
-          // We need to pass the session ID to the handler. 
-          // However, onMessage signature in useWebSocketChat doesn't support it directly if we bind it here.
-          // But handleWebSocketMessage needs to know the session ID of the *stream*.
-          // The WebSocket is persistent. The session ID is per *message*? 
-          // No, the WebSocket is for the chat.
-          // Actually, useWebSocketChat is a simple wrapper.
-          // We need to store the current stream's session ID in a ref?
-          // Or pass it when we send the message?
-          // The server response doesn't seem to include session ID in the WebSocket message (based on interface).
-          // So we must assume the response belongs to the *last* sent message's session?
-          // This is tricky with WebSocket if multiple sessions are active?
-          // But the UI only supports one active stream at a time.
-          // So we can use a ref to store the `streamingSessionId`.
-          if (streamingSessionIdRef.current) {
-            handleWebSocketMessage(data, streamingSessionIdRef.current)
-          }
-        },
-        onOpen: () => {
-          isConnectedRef.current = true
-        },
-        onClose: () => {
-          isConnectedRef.current = false
-        },
-        onError: (error) => {
-          console.error('WebSocket connection failed')
-          isConnectedRef.current = false
-          setStreamingErrorMessage('WebSocket connection error')
+    connect({
+      endpoint: endpointUrl,
+      authToken,
+      onMessage: (data) => {
+        if (streamingSessionIdRef.current) {
+          handleWebSocketMessage(data, streamingSessionIdRef.current)
         }
-      })
-    }
+      },
+      onOpen: () => {
+        isConnectedRef.current = true
+      },
+      onClose: () => {
+        isConnectedRef.current = false
+      },
+      onError: (error) => {
+        console.error('WebSocket connection failed')
+        isConnectedRef.current = false
+        setStreamingErrorMessage('WebSocket connection error')
+      }
+    })
   }, [selectedEndpoint, authToken, connect, handleWebSocketMessage, setStreamingErrorMessage])
 
   const handleStreamResponse = useCallback(
     async (input: string | FormData, explicitSessionId?: string) => {
-      // Use explicit session ID if provided (from previous fix) or current session
-      // But we need to capture the session ID for this specific stream
-      const currentSessionId = explicitSessionId || sessionId || crypto.randomUUID()
-      // Ensure WebSocket is connected
+      const currentSessionId = explicitSessionId || sessionId || generateUUID()
+
+      // Ensure connection is established (idempotent via service)
       ensureConnection()
-
-      // Wait for WebSocket to be ready (up to 5 seconds)
-      let attempts = 0
-      while (!isConnectedRef.current && attempts < 50) {
-        await new Promise(resolve => setTimeout(resolve, 100))
-        attempts++
-      }
-
-      if (!isConnectedRef.current) {
-        updateMessagesWithErrorState()
-        setStreamingErrorMessage('Failed to connect to WebSocket server')
-        return
-      }
 
       setIsStreaming(true)
 
@@ -279,8 +250,8 @@ const useWebSocketStreamHandler = ({ shouldAutoConnect = true }: { shouldAutoCon
         created_at: Math.floor(Date.now() / 1000) + 1
       }, currentSessionId)
 
-      // Send message via WebSocket
-      const sent = sendMessage(message, {})
+      // Send message via WebSocket (service handles reconnection/retry)
+      const sent = await sendMessage(message, {})
 
       if (!sent) {
         updateMessagesWithErrorState()

@@ -1,4 +1,5 @@
-import { useCallback, useRef, useEffect } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
+import { webSocketService } from '@/lib/websocket-service'
 
 interface WebSocketChatOptions {
   endpoint: string
@@ -10,123 +11,77 @@ interface WebSocketChatOptions {
 }
 
 export default function useWebSocketChat() {
-  const wsRef = useRef<WebSocket | null>(null)
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const currentUrlRef = useRef<string | null>(null)
-  const onMessageRef = useRef<((data: any) => void) | null>(null)
+  // We keep track of handlers to remove them on unmount
+  const handlersRef = useRef<{
+    onMessage: ((data: any) => void) | null
+    onOpen: (() => void) | null
+    onClose: (() => void) | null
+    onError: ((error: Event) => void) | null
+  }>({
+    onMessage: null,
+    onOpen: null,
+    onClose: null,
+    onError: null
+  })
 
   useEffect(() => {
     console.log('useWebSocketChat mounted')
-    return () => console.log('useWebSocketChat unmounted')
+    return () => {
+      console.log('useWebSocketChat unmounted')
+      // Cleanup handlers on unmount
+      if (handlersRef.current.onMessage) webSocketService.removeMessageHandler(handlersRef.current.onMessage)
+      if (handlersRef.current.onOpen) webSocketService.removeOpenHandler(handlersRef.current.onOpen)
+      if (handlersRef.current.onClose) webSocketService.removeCloseHandler(handlersRef.current.onClose)
+      if (handlersRef.current.onError) webSocketService.removeErrorHandler(handlersRef.current.onError)
+    }
   }, [])
 
   const connect = useCallback(
-    ({ endpoint, authToken, onMessage, onOpen, onClose, onError }: WebSocketChatOptions) => {
-      // Update the message handler ref
-      onMessageRef.current = onMessage
+    async ({ endpoint, authToken, onMessage, onOpen, onClose, onError }: WebSocketChatOptions) => {
+      // Remove old handlers if any
+      if (handlersRef.current.onMessage) webSocketService.removeMessageHandler(handlersRef.current.onMessage)
+      if (handlersRef.current.onOpen) webSocketService.removeOpenHandler(handlersRef.current.onOpen)
+      if (handlersRef.current.onClose) webSocketService.removeCloseHandler(handlersRef.current.onClose)
+      if (handlersRef.current.onError) webSocketService.removeErrorHandler(handlersRef.current.onError)
 
-      // Construct WebSocket URL
-      // Convert http://localhost:9000 to ws://localhost:9000/chat
+      // Register new handlers
+      handlersRef.current.onMessage = onMessage
+      handlersRef.current.onOpen = onOpen || null
+      handlersRef.current.onClose = onClose || null
+      handlersRef.current.onError = onError || null
+
+      webSocketService.addMessageHandler(onMessage)
+      if (onOpen) webSocketService.addOpenHandler(onOpen)
+      if (onClose) webSocketService.addCloseHandler(onClose)
+      if (onError) webSocketService.addErrorHandler(onError)
+
       if (!endpoint) {
         console.error('WebSocket endpoint is missing')
         return
       }
 
-      const wsUrl = endpoint.replace(/^https?:\/\//, (match) =>
-        match === 'https://' ? 'wss://' : 'ws://'
-      )
-      const fullWsUrl = authToken
-        ? `${wsUrl}/chat?jwt=${authToken}`
-        : `${wsUrl}/chat`
-
-      console.log('Connecting to WebSocket:', fullWsUrl)
-
-      // If already connected to the same URL, don't reconnect
-      if (
-        wsRef.current &&
-        (wsRef.current.readyState === WebSocket.OPEN ||
-          wsRef.current.readyState === WebSocket.CONNECTING) &&
-        currentUrlRef.current === fullWsUrl
-      ) {
-        return
-      }
-
-      // Close existing connection if any
-      if (wsRef.current) {
-        console.log('Closing WebSocket connection (reconnecting or changing URL)')
-        wsRef.current.close()
-      }
-
       try {
-        const ws = new WebSocket(fullWsUrl)
-        wsRef.current = ws
-        currentUrlRef.current = fullWsUrl
-
-        ws.onopen = (event) => {
-          console.log('WebSocket connected')
-          if (onOpen) onOpen()
-        }
-
-        ws.onmessage = (event) => {
-          try {
-            const data = JSON.parse(event.data)
-            if (onMessageRef.current) {
-              onMessageRef.current(data)
-            }
-          } catch (error) {
-            console.error('Error parsing WebSocket message:', error)
-          }
-        }
-
-        ws.onerror = (event) => {
-          // WebSocket error events often don't contain specific details for security reasons
-          console.error('WebSocket connection error. Check if the server is running and reachable.')
-          if (onError) onError(event)
-        }
-
-        ws.onclose = (event) => {
-          console.log('WebSocket closed')
-          if (onClose) onClose()
-        }
+        await webSocketService.connect(endpoint, authToken)
       } catch (error) {
-        console.error('Error creating WebSocket:', error)
+        console.error('Error connecting to WebSocket:', error)
         if (onError) onError(error as Event)
       }
     },
     []
   )
 
-  const sendMessage = useCallback((question: string, refData: Record<string, any> = {}) => {
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      const query = JSON.stringify({
-        question,
-        ref_data: refData
-      })
-      wsRef.current.send(query)
-      return true
-    } else {
-      console.error('WebSocket is not open')
-      return false
-    }
+  const sendMessage = useCallback(async (question: string, refData: Record<string, any> = {}) => {
+    return await webSocketService.sendMessage(question, refData)
   }, [])
 
   const disconnect = useCallback(() => {
-    if (wsRef.current) {
-      console.log('Disconnecting WebSocket')
-      wsRef.current.close()
-      wsRef.current = null
-    }
-    if (reconnectTimeoutRef.current) {
-      clearTimeout(reconnectTimeoutRef.current)
-      reconnectTimeoutRef.current = null
-    }
-    currentUrlRef.current = null
+    webSocketService.disconnect()
   }, [])
 
   const reconnect = useCallback(
     (options: WebSocketChatOptions) => {
       disconnect()
-      reconnectTimeoutRef.current = setTimeout(() => {
+      setTimeout(() => {
         connect(options)
       }, 1000)
     },
@@ -134,15 +89,8 @@ export default function useWebSocketChat() {
   )
 
   const getReadyState = useCallback(() => {
-    return wsRef.current?.readyState ?? WebSocket.CLOSED
+    return webSocketService.isConnected() ? WebSocket.OPEN : WebSocket.CLOSED
   }, [])
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      disconnect()
-    }
-  }, [disconnect])
 
   return {
     connect,
@@ -150,7 +98,7 @@ export default function useWebSocketChat() {
     disconnect,
     reconnect,
     getReadyState,
-    isOpen: () => wsRef.current?.readyState === WebSocket.OPEN,
-    isConnecting: () => wsRef.current?.readyState === WebSocket.CONNECTING
+    isOpen: () => webSocketService.isConnected(),
+    isConnecting: () => webSocketService.isConnecting()
   }
 }

@@ -3,6 +3,7 @@ import { useCallback, useRef, useEffect } from 'react'
 import { APIRoutes } from '@/api/routes'
 
 import useChatActions from '@/hooks/useChatActions'
+import { generateUUID } from '@/lib/utils'
 import { useStore } from '../store'
 import { RunEvent, RunResponseContent, type RunResponse } from '@/types/os'
 import { constructEndpointUrl } from '@/lib/constructEndpointUrl'
@@ -129,7 +130,7 @@ const useAIChatStreamHandler = () => {
         return prevMessages
       })
 
-      const currentSessionId = sessionId || crypto.randomUUID()
+      const currentSessionId = sessionId || generateUUID()
       if (!sessionId) {
         setSessionId(currentSessionId)
       }
