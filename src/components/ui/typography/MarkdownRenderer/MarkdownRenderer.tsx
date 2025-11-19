@@ -1,6 +1,7 @@
 import { type FC } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import remarkBreaks from 'remark-breaks'
 
 import { cn } from '@/lib/utils'
 import { useStore } from '@/store'
@@ -78,7 +79,7 @@ const MarkdownRenderer: FC<MarkdownRendererProps> = ({
         'prose prose-invert max-w-none text-secondary prose-headings:text-secondary prose-p:text-secondary prose-strong:font-bold prose-strong:text-secondary prose-a:text-primary prose-code:text-secondary prose-pre:bg-accent prose-pre:text-secondary',
         classname
       )}
-      remarkPlugins={[remarkGfm]}
+      remarkPlugins={[remarkGfm, remarkBreaks]}
       urlTransform={(url) => {
         // Allow question:// protocol to pass through
         if (url.startsWith('question://')) {

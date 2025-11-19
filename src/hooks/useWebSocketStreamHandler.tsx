@@ -48,6 +48,14 @@ const useWebSocketStreamHandler = () => {
           // Bot is starting to respond
           currentResponseRef.current = ''
           setIsStreaming(true)
+          setMessages((prevMessages) => {
+            const newMessages = [...prevMessages]
+            const lastMessage = newMessages[newMessages.length - 1]
+            if (lastMessage && lastMessage.role === 'agent') {
+              lastMessage.progressStatus = 'Agent is typing...'
+            }
+            return newMessages
+          })
         } else if (data.type === 'stream') {
           // Streaming content
           currentResponseRef.current += data.message
@@ -56,12 +64,22 @@ const useWebSocketStreamHandler = () => {
             const lastMessage = newMessages[newMessages.length - 1]
             if (lastMessage && lastMessage.role === 'agent') {
               lastMessage.content = currentResponseRef.current
+              // Clear progress status when actual content is streaming
+              lastMessage.progressStatus = undefined
             }
             return newMessages
           })
         } else if (data.type === 'info') {
-          // Info message (could be shown in UI header/status)
+          // Info message - update progress status in the last agent message
           console.log('Info:', data.message)
+          setMessages((prevMessages) => {
+            const newMessages = [...prevMessages]
+            const lastMessage = newMessages[newMessages.length - 1]
+            if (lastMessage && lastMessage.role === 'agent') {
+              lastMessage.progressStatus = data.message
+            }
+            return newMessages
+          })
         } else if (data.type === 'end') {
           // Response complete
           currentResponseRef.current += data.message
@@ -70,6 +88,7 @@ const useWebSocketStreamHandler = () => {
             const lastMessage = newMessages[newMessages.length - 1]
             if (lastMessage && lastMessage.role === 'agent') {
               lastMessage.content = currentResponseRef.current
+              lastMessage.progressStatus = undefined // Clear progress status on completion
             }
             return newMessages
           })

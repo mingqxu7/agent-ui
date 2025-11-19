@@ -209,6 +209,7 @@ export interface ChatMessage {
   videos?: VideoData[]
   audio?: AudioData[]
   response_audio?: ResponseAudio
+  progressStatus?: string
 }
 
 export interface AgentDetails {

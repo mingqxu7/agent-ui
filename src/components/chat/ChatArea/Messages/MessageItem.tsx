@@ -7,6 +7,7 @@ import Images from './Multimedia/Images'
 import Audios from './Multimedia/Audios'
 import { memo } from 'react'
 import AgentThinkingLoader from './AgentThinkingLoader'
+import ProgressIndicator from './ProgressIndicator'
 
 interface MessageProps {
   message: ChatMessage
@@ -39,6 +40,9 @@ const AgentMessage = ({ message }: MessageProps) => {
         {message.audio && message.audio.length > 0 && (
           <Audios audio={message.audio} />
         )}
+        {message.progressStatus && (
+          <ProgressIndicator message={message.progressStatus} />
+        )}
       </div>
     )
   } else if (message.response_audio) {
@@ -62,8 +66,12 @@ const AgentMessage = ({ message }: MessageProps) => {
     }
   } else {
     messageContent = (
-      <div className="mt-2">
-        <AgentThinkingLoader />
+      <div className="mt-2 flex flex-col gap-3">
+        {message.progressStatus ? (
+          <ProgressIndicator message={message.progressStatus} />
+        ) : (
+          <AgentThinkingLoader />
+        )}
       </div>
     )
   }
