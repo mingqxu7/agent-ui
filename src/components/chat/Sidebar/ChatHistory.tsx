@@ -69,7 +69,7 @@ const ChatHistory = () => {
     return (
         <div className="flex w-full flex-col gap-2 overflow-hidden">
             <div className="text-xs font-medium uppercase text-primary">
-                History
+                Chats
             </div>
             <div className="flex flex-col gap-1 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-primary/10 hover:scrollbar-thumb-primary/20">
                 <AnimatePresence initial={false}>

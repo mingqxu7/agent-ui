@@ -16,14 +16,23 @@ const MarkdownRenderer: FC<MarkdownRendererProps> = ({
 }) => {
   const useWebSocket = useStore((state) => state.useWebSocket)
   const isStreaming = useStore((state) => state.isStreaming)
-  const { handleStreamResponse: handleWsStreamResponse } = useWebSocketStreamHandler()
+  const { handleStreamResponse: handleWsStreamResponse } = useWebSocketStreamHandler({ shouldAutoConnect: false })
   const { handleStreamResponse: handleHttpStreamResponse } = useAIChatStreamHandler()
 
   // Select the appropriate handler based on mode
   const handleStreamResponse = useWebSocket ? handleWsStreamResponse : handleHttpStreamResponse
 
   // Ensure children is a string
-  const content = typeof children === 'string' ? children : String(children || '')
+  let content = typeof children === 'string' ? children : String(children || '')
+
+  // Pre-process content to handle spaces in question:// links
+  // Markdown breaks links with spaces, so we need to encode them
+  content = content.replace(/\[([^\]]+)\]\((question:\/\/[^)]+)\)/g, (match, text, url) => {
+    // Encode spaces in the URL part
+    const encodedUrl = url.replace(/ /g, '%20')
+    return `[${text}](${encodedUrl})`
+  })
+
 
   // Custom link component that handles question:// protocol
   const LinkComponent = ({ node, href, children, ...props }: any) => {

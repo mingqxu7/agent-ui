@@ -13,7 +13,7 @@ interface WebSocketMessage {
   message: string
 }
 
-const useWebSocketStreamHandler = () => {
+const useWebSocketStreamHandler = ({ shouldAutoConnect = true }: { shouldAutoConnect?: boolean } = {}) => {
   const setMessages = useStore((state) => state.setMessages)
   const { addMessage, focusChatInput } = useChatActions()
   const [sessionId, setSessionId] = useQueryState('session')
@@ -306,10 +306,10 @@ const useWebSocketStreamHandler = () => {
 
   // Connect on mount and when endpoint/token changes
   useEffect(() => {
-    if (authToken !== undefined && !isTokenLoading) {
+    if (shouldAutoConnect && authToken !== undefined && !isTokenLoading) {
       ensureConnection()
     }
-  }, [ensureConnection, authToken, isTokenLoading])
+  }, [ensureConnection, authToken, isTokenLoading, shouldAutoConnect])
 
   return {
     handleStreamResponse,

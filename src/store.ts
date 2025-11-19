@@ -135,10 +135,9 @@ export const useStore = create<Store>()(
         }))
     }),
     {
-      name: 'endpoint-storage',
+      name: 'chat-storage-v2',
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
-        selectedEndpoint: state.selectedEndpoint,
         useWebSocket: state.useWebSocket,
         sessionsData: state.sessionsData,
         chatSessions: state.chatSessions

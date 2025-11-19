@@ -13,7 +13,7 @@ const ChatInput = () => {
   const { chatInputRef, useWebSocket, isEndpointActive, inputMessage, setInputMessage, setSubmitMessage } = useStore()
 
   const { handleStreamResponse: handleHttpStreamResponse } = useAIChatStreamHandler()
-  const { handleStreamResponse: handleWsStreamResponse } = useWebSocketStreamHandler()
+  const { handleStreamResponse: handleWsStreamResponse } = useWebSocketStreamHandler({ shouldAutoConnect: true })
   const [selectedAgent] = useQueryState('agent')
   const [teamId] = useQueryState('team')
   const isStreaming = useStore((state) => state.isStreaming)
