@@ -166,3 +166,26 @@ export const deleteTeamSessionAPI = async (
   }
   return response
 }
+
+export const getTokenAPI = async (
+  endpoint: string
+): Promise<{ token: string | null; valid_until: number | null }> => {
+  try {
+    const response = await fetch(APIRoutes.GetToken(endpoint), {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch token: ${response.statusText}`)
+    }
+
+    const data = await response.json()
+    return data
+  } catch (error) {
+    console.error('Error fetching token:', error)
+    return { token: null, valid_until: null }
+  }
+}

@@ -86,19 +86,25 @@ const ItalicText = ({ className, ...props }: ItalicTextProps) => (
   />
 )
 
-const StrongText = ({ className, ...props }: StrongTextProps) => (
-  <strong
-    className={cn(className, 'text-sm font-semibold')}
-    {...filterProps(props)}
-  />
-)
+const StrongText = ({ className, ...props }: StrongTextProps) => {
+  console.log('StrongText rendered with props:', props)
+  return (
+    <strong
+      className={cn(className, 'font-bold')}
+      {...filterProps(props)}
+    />
+  )
+}
 
-const BoldText = ({ className, ...props }: BoldTextProps) => (
-  <b
-    className={cn(className, 'text-sm font-semibold')}
-    {...filterProps(props)}
-  />
-)
+const BoldText = ({ className, ...props }: BoldTextProps) => {
+  console.log('BoldText rendered with props:', props)
+  return (
+    <b
+      className={cn(className, 'font-bold')}
+      {...filterProps(props)}
+    />
+  )
+}
 
 const UnderlinedText = ({ className, ...props }: UnderlinedTextProps) => (
   <u

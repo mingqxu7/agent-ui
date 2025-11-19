@@ -54,6 +54,12 @@ interface Store {
   ) => void
   isSessionsLoading: boolean
   setIsSessionsLoading: (isSessionsLoading: boolean) => void
+  useWebSocket: boolean
+  setUseWebSocket: (useWebSocket: boolean) => void
+  inputMessage: string
+  setInputMessage: (inputMessage: string) => void
+  submitMessage: (() => void) | null
+  setSubmitMessage: (submitFn: (() => void) | null) => void
 }
 
 export const useStore = create<Store>()(
@@ -81,7 +87,7 @@ export const useStore = create<Store>()(
             typeof messages === 'function' ? messages(state.messages) : messages
         })),
       chatInputRef: { current: null },
-      selectedEndpoint: 'http://localhost:7777',
+      selectedEndpoint: 'http://localhost:9000',
       setSelectedEndpoint: (selectedEndpoint) =>
         set(() => ({ selectedEndpoint })),
       authToken: '',
@@ -104,13 +110,20 @@ export const useStore = create<Store>()(
         })),
       isSessionsLoading: false,
       setIsSessionsLoading: (isSessionsLoading) =>
-        set(() => ({ isSessionsLoading }))
+        set(() => ({ isSessionsLoading })),
+      useWebSocket: true,
+      setUseWebSocket: (useWebSocket) => set(() => ({ useWebSocket })),
+      inputMessage: '',
+      setInputMessage: (inputMessage) => set(() => ({ inputMessage })),
+      submitMessage: null,
+      setSubmitMessage: (submitFn) => set(() => ({ submitMessage: submitFn }))
     }),
     {
       name: 'endpoint-storage',
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
-        selectedEndpoint: state.selectedEndpoint
+        selectedEndpoint: state.selectedEndpoint,
+        useWebSocket: state.useWebSocket
       }),
       onRehydrateStorage: () => (state) => {
         state?.setHydrated?.()

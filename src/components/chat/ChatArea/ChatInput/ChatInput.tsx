@@ -1,22 +1,30 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useCallback } from 'react'
 import { toast } from 'sonner'
 import { TextArea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { useStore } from '@/store'
 import useAIChatStreamHandler from '@/hooks/useAIStreamHandler'
+import useWebSocketStreamHandler from '@/hooks/useWebSocketStreamHandler'
 import { useQueryState } from 'nuqs'
 import Icon from '@/components/ui/icon'
 
 const ChatInput = () => {
-  const { chatInputRef } = useStore()
+  const { chatInputRef, useWebSocket, isEndpointActive, inputMessage, setInputMessage, setSubmitMessage } = useStore()
 
-  const { handleStreamResponse } = useAIChatStreamHandler()
+  const { handleStreamResponse: handleHttpStreamResponse } = useAIChatStreamHandler()
+  const { handleStreamResponse: handleWsStreamResponse } = useWebSocketStreamHandler()
   const [selectedAgent] = useQueryState('agent')
   const [teamId] = useQueryState('team')
-  const [inputMessage, setInputMessage] = useState('')
   const isStreaming = useStore((state) => state.isStreaming)
-  const handleSubmit = async () => {
+
+  // Select the appropriate handler based on mode
+  const handleStreamResponse = useWebSocket ? handleWsStreamResponse : handleHttpStreamResponse
+
+  // In WebSocket mode, we don't need agent/team selection
+  const canChat = useWebSocket ? isEndpointActive : (selectedAgent || teamId)
+
+  const handleSubmit = useCallback(async () => {
     if (!inputMessage.trim()) return
 
     const currentMessage = inputMessage
@@ -31,7 +39,13 @@ const ChatInput = () => {
         }`
       )
     }
-  }
+  }, [inputMessage, setInputMessage, handleStreamResponse])
+
+  // Register the submit function in the store so it can be called from elsewhere
+  useEffect(() => {
+    setSubmitMessage(() => handleSubmit)
+    return () => setSubmitMessage(null)
+  }, [handleSubmit, setSubmitMessage])
 
   return (
     <div className="relative mx-auto mb-1 flex w-full max-w-2xl items-end justify-center gap-x-2 font-geist">
@@ -51,14 +65,12 @@ const ChatInput = () => {
           }
         }}
         className="w-full border border-accent bg-primaryAccent px-4 text-sm text-primary focus:border-accent"
-        disabled={!(selectedAgent || teamId)}
+        disabled={!canChat}
         ref={chatInputRef}
       />
       <Button
         onClick={handleSubmit}
-        disabled={
-          !(selectedAgent || teamId) || !inputMessage.trim() || isStreaming
-        }
+        disabled={!canChat || !inputMessage.trim() || isStreaming}
         size="icon"
         className="rounded-xl bg-primary p-5 text-primaryAccent"
       >
