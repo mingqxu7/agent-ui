@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useCallback, useRef, useEffect } from 'react'
 
 import { APIRoutes } from '@/api/routes'
 
@@ -17,6 +17,12 @@ const useAIChatStreamHandler = () => {
   const [agentId] = useQueryState('agent')
   const [teamId] = useQueryState('team')
   const [sessionId, setSessionId] = useQueryState('session')
+  const sessionIdRef = useRef(sessionId)
+  const setChatSessions = useStore((state) => state.setChatSessions)
+
+  useEffect(() => {
+    sessionIdRef.current = sessionId
+  }, [sessionId])
   const selectedEndpoint = useStore((state) => state.selectedEndpoint)
   const authToken = useStore((state) => state.authToken)
   const mode = useStore((state) => state.mode)
@@ -123,11 +129,16 @@ const useAIChatStreamHandler = () => {
         return prevMessages
       })
 
+      const currentSessionId = sessionId || crypto.randomUUID()
+      if (!sessionId) {
+        setSessionId(currentSessionId)
+      }
+
       addMessage({
         role: 'user',
         content: formData.get('message') as string,
         created_at: Math.floor(Date.now() / 1000)
-      })
+      }, currentSessionId)
 
       addMessage({
         role: 'agent',
@@ -135,7 +146,7 @@ const useAIChatStreamHandler = () => {
         tool_calls: [],
         streamingError: false,
         created_at: Math.floor(Date.now() / 1000) + 1
-      })
+      }, currentSessionId)
 
       let lastContent = ''
       let newSessionId = sessionId
@@ -161,7 +172,7 @@ const useAIChatStreamHandler = () => {
         }
 
         formData.append('stream', 'true')
-        formData.append('session_id', sessionId ?? '')
+        formData.append('session_id', currentSessionId)
 
         // Create headers with auth token if available
         const headers: Record<string, string> = {}
@@ -207,86 +218,104 @@ const useAIChatStreamHandler = () => {
               chunk.event === RunEvent.ToolCallCompleted ||
               chunk.event === RunEvent.TeamToolCallCompleted
             ) {
-              setMessages((prevMessages) => {
-                const newMessages = [...prevMessages]
-                const lastMessage = newMessages[newMessages.length - 1]
-                if (lastMessage && lastMessage.role === 'agent') {
-                  lastMessage.tool_calls = processChunkToolCalls(
-                    chunk,
-                    lastMessage.tool_calls
-                  )
-                }
-                return newMessages
-              })
+              if (sessionIdRef.current === newSessionId) {
+                setMessages((prevMessages) => {
+                  const newMessages = [...prevMessages]
+                  const lastMessage = newMessages[newMessages.length - 1]
+                  if (lastMessage && lastMessage.role === 'agent') {
+                    lastMessage.tool_calls = processChunkToolCalls(
+                      chunk,
+                      lastMessage.tool_calls
+                    )
+                  }
+                  return newMessages
+                })
+              }
             } else if (
               chunk.event === RunEvent.RunContent ||
               chunk.event === RunEvent.TeamRunContent
             ) {
-              setMessages((prevMessages) => {
-                const newMessages = [...prevMessages]
-                const lastMessage = newMessages[newMessages.length - 1]
-                if (
-                  lastMessage &&
-                  lastMessage.role === 'agent' &&
-                  typeof chunk.content === 'string'
-                ) {
-                  const uniqueContent = chunk.content.replace(lastContent, '')
-                  lastMessage.content += uniqueContent
-                  lastContent = chunk.content
+              if (!newSessionId) return
 
-                  // Handle tool calls streaming
+              let uniqueContent = ''
+              if (typeof chunk.content === 'string') {
+                uniqueContent = chunk.content.replace(lastContent, '')
+                lastContent = chunk.content
+              } else if (chunk.content !== null) {
+                // Handle non-string content (JSON block)
+                const jsonBlock = getJsonMarkdown(chunk.content)
+                uniqueContent = jsonBlock
+                lastContent = jsonBlock
+              }
+
+              // Update chatSessions
+              setChatSessions((prev) => {
+                const sessionMessages = prev[newSessionId!] || []
+                const updatedMessages = [...sessionMessages]
+                const lastMessage = updatedMessages[updatedMessages.length - 1]
+
+                if (lastMessage && lastMessage.role === 'agent') {
+                  lastMessage.content += uniqueContent
+
+                  // Handle tool calls (simplified for chatSessions, ideally should match full logic)
                   lastMessage.tool_calls = processChunkToolCalls(
                     chunk,
                     lastMessage.tool_calls
                   )
-                  if (chunk.extra_data?.reasoning_steps) {
-                    lastMessage.extra_data = {
-                      ...lastMessage.extra_data,
-                      reasoning_steps: chunk.extra_data.reasoning_steps
-                    }
-                  }
-
-                  if (chunk.extra_data?.references) {
-                    lastMessage.extra_data = {
-                      ...lastMessage.extra_data,
-                      references: chunk.extra_data.references
-                    }
-                  }
-
-                  lastMessage.created_at =
-                    chunk.created_at ?? lastMessage.created_at
-                  if (chunk.images) {
-                    lastMessage.images = chunk.images
-                  }
-                  if (chunk.videos) {
-                    lastMessage.videos = chunk.videos
-                  }
-                  if (chunk.audio) {
-                    lastMessage.audio = chunk.audio
-                  }
-                } else if (
-                  lastMessage &&
-                  lastMessage.role === 'agent' &&
-                  typeof chunk?.content !== 'string' &&
-                  chunk.content !== null
-                ) {
-                  const jsonBlock = getJsonMarkdown(chunk?.content)
-
-                  lastMessage.content += jsonBlock
-                  lastContent = jsonBlock
-                } else if (
-                  chunk.response_audio?.transcript &&
-                  typeof chunk.response_audio?.transcript === 'string'
-                ) {
-                  const transcript = chunk.response_audio.transcript
-                  lastMessage.response_audio = {
-                    ...lastMessage.response_audio,
-                    transcript:
-                      lastMessage.response_audio?.transcript + transcript
-                  }
+                  // ... other metadata updates if needed
                 }
-                return newMessages
+                return { ...prev, [newSessionId!]: updatedMessages }
               })
+
+              if (sessionIdRef.current === newSessionId) {
+                setMessages((prevMessages) => {
+                  const newMessages = [...prevMessages]
+                  const lastMessage = newMessages[newMessages.length - 1]
+                  if (lastMessage && lastMessage.role === 'agent') {
+                    lastMessage.content += uniqueContent
+
+                    // Handle tool calls streaming
+                    lastMessage.tool_calls = processChunkToolCalls(
+                      chunk,
+                      lastMessage.tool_calls
+                    )
+                    if (chunk.extra_data?.reasoning_steps) {
+                      lastMessage.extra_data = {
+                        ...lastMessage.extra_data,
+                        reasoning_steps: chunk.extra_data.reasoning_steps
+                      }
+                    }
+
+                    if (chunk.extra_data?.references) {
+                      lastMessage.extra_data = {
+                        ...lastMessage.extra_data,
+                        references: chunk.extra_data.references
+                      }
+                    }
+
+                    lastMessage.created_at =
+                      chunk.created_at ?? lastMessage.created_at
+                    if (chunk.images) {
+                      lastMessage.images = chunk.images
+                    }
+                    if (chunk.videos) {
+                      lastMessage.videos = chunk.videos
+                    }
+                    if (chunk.audio) {
+                      lastMessage.audio = chunk.audio
+                    }
+
+                    if (chunk.response_audio?.transcript && typeof chunk.response_audio.transcript === 'string') {
+                      const transcript = chunk.response_audio.transcript
+                      lastMessage.response_audio = {
+                        ...lastMessage.response_audio,
+                        transcript: (lastMessage.response_audio?.transcript || '') + transcript
+                      }
+                    }
+                  }
+                  return newMessages
+                })
+              }
             } else if (
               chunk.event === RunEvent.ReasoningStep ||
               chunk.event === RunEvent.TeamReasoningStep
@@ -407,7 +436,7 @@ const useAIChatStreamHandler = () => {
               )
             }
           },
-          onComplete: () => {}
+          onComplete: () => { }
         })
       } catch (error) {
         updateMessagesWithErrorState()

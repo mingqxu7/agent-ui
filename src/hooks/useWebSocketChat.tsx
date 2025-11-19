@@ -12,16 +12,26 @@ interface WebSocketChatOptions {
 export default function useWebSocketChat() {
   const wsRef = useRef<WebSocket | null>(null)
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const currentUrlRef = useRef<string | null>(null)
+  const onMessageRef = useRef<((data: any) => void) | null>(null)
+
+  useEffect(() => {
+    console.log('useWebSocketChat mounted')
+    return () => console.log('useWebSocketChat unmounted')
+  }, [])
 
   const connect = useCallback(
     ({ endpoint, authToken, onMessage, onOpen, onClose, onError }: WebSocketChatOptions) => {
-      // Close existing connection if any
-      if (wsRef.current) {
-        wsRef.current.close()
-      }
+      // Update the message handler ref
+      onMessageRef.current = onMessage
 
       // Construct WebSocket URL
       // Convert http://localhost:9000 to ws://localhost:9000/chat
+      if (!endpoint) {
+        console.error('WebSocket endpoint is missing')
+        return
+      }
+
       const wsUrl = endpoint.replace(/^https?:\/\//, (match) =>
         match === 'https://' ? 'wss://' : 'ws://'
       )
@@ -29,9 +39,28 @@ export default function useWebSocketChat() {
         ? `${wsUrl}/chat?jwt=${authToken}`
         : `${wsUrl}/chat`
 
+      console.log('Connecting to WebSocket:', fullWsUrl)
+
+      // If already connected to the same URL, don't reconnect
+      if (
+        wsRef.current &&
+        (wsRef.current.readyState === WebSocket.OPEN ||
+          wsRef.current.readyState === WebSocket.CONNECTING) &&
+        currentUrlRef.current === fullWsUrl
+      ) {
+        return
+      }
+
+      // Close existing connection if any
+      if (wsRef.current) {
+        console.log('Closing WebSocket connection (reconnecting or changing URL)')
+        wsRef.current.close()
+      }
+
       try {
         const ws = new WebSocket(fullWsUrl)
         wsRef.current = ws
+        currentUrlRef.current = fullWsUrl
 
         ws.onopen = (event) => {
           console.log('WebSocket connected')
@@ -41,14 +70,17 @@ export default function useWebSocketChat() {
         ws.onmessage = (event) => {
           try {
             const data = JSON.parse(event.data)
-            onMessage(data)
+            if (onMessageRef.current) {
+              onMessageRef.current(data)
+            }
           } catch (error) {
             console.error('Error parsing WebSocket message:', error)
           }
         }
 
         ws.onerror = (event) => {
-          console.error('WebSocket error:', event)
+          // WebSocket error events often don't contain specific details for security reasons
+          console.error('WebSocket connection error. Check if the server is running and reachable.')
           if (onError) onError(event)
         }
 
@@ -80,6 +112,7 @@ export default function useWebSocketChat() {
 
   const disconnect = useCallback(() => {
     if (wsRef.current) {
+      console.log('Disconnecting WebSocket')
       wsRef.current.close()
       wsRef.current = null
     }
@@ -87,6 +120,7 @@ export default function useWebSocketChat() {
       clearTimeout(reconnectTimeoutRef.current)
       reconnectTimeoutRef.current = null
     }
+    currentUrlRef.current = null
   }, [])
 
   const reconnect = useCallback(

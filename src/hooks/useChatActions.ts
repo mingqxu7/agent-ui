@@ -11,7 +11,11 @@ const useChatActions = () => {
   const { chatInputRef } = useStore()
   const selectedEndpoint = useStore((state) => state.selectedEndpoint)
   const authToken = useStore((state) => state.authToken)
-  const [, setSessionId] = useQueryState('session')
+  const [sessionId, setSessionId] = useQueryState('session')
+  const chatSessions = useStore((state) => state.chatSessions)
+  const setChatSessions = useStore((state) => state.setChatSessions)
+  const sessionsData = useStore((state) => state.sessionsData)
+  const setSessionsData = useStore((state) => state.setSessionsData)
   const setMessages = useStore((state) => state.setMessages)
   const setIsEndpointActive = useStore((state) => state.setIsEndpointActive)
   const setIsEndpointLoading = useStore((state) => state.setIsEndpointLoading)
@@ -66,10 +70,55 @@ const useChatActions = () => {
   }, [])
 
   const addMessage = useCallback(
-    (message: ChatMessage) => {
-      setMessages((prevMessages) => [...prevMessages, message])
+    (message: ChatMessage, explicitSessionId?: string) => {
+      setMessages((prevMessages) => {
+        const newMessages = [...prevMessages, message]
+
+        // Generate session ID if not exists
+        const currentSessionId = explicitSessionId || sessionId || crypto.randomUUID()
+        if (!sessionId && !explicitSessionId) {
+          setSessionId(currentSessionId)
+        } else if (explicitSessionId && !sessionId) {
+          setSessionId(explicitSessionId)
+        }
+
+        // Update chat sessions
+        setChatSessions((prev) => ({
+          ...prev,
+          [currentSessionId]: newMessages
+        }))
+
+        // Update sessions list
+        setSessionsData((prev) => {
+          const existingSessionIndex = prev ? prev.findIndex(s => s.session_id === currentSessionId) : -1
+          const timestamp = Date.now()
+          const sessionName = newMessages[0]?.content?.slice(0, 50) || 'New Chat'
+
+          if (existingSessionIndex >= 0 && prev) {
+            const newSessions = [...prev]
+            newSessions[existingSessionIndex] = {
+              ...newSessions[existingSessionIndex],
+              updated_at: timestamp,
+              session_name: sessionName
+            }
+            return newSessions
+          } else {
+            return [
+              {
+                session_id: currentSessionId,
+                session_name: sessionName,
+                created_at: timestamp,
+                updated_at: timestamp
+              },
+              ...(prev || [])
+            ]
+          }
+        })
+
+        return newMessages
+      })
     },
-    [setMessages]
+    [setMessages, sessionId, setSessionId, setChatSessions, setSessionsData]
   )
 
   const initialize = useCallback(async () => {

@@ -16,7 +16,13 @@ interface WebSocketMessage {
 const useWebSocketStreamHandler = () => {
   const setMessages = useStore((state) => state.setMessages)
   const { addMessage, focusChatInput } = useChatActions()
-  const [, setSessionId] = useQueryState('session')
+  const [sessionId, setSessionId] = useQueryState('session')
+  const sessionIdRef = useRef(sessionId)
+  const setChatSessions = useStore((state) => state.setChatSessions)
+
+  useEffect(() => {
+    sessionIdRef.current = sessionId
+  }, [sessionId])
   const selectedEndpoint = useStore((state) => state.selectedEndpoint)
   const setStreamingErrorMessage = useStore(
     (state) => state.setStreamingErrorMessage
@@ -25,10 +31,11 @@ const useWebSocketStreamHandler = () => {
   const { connect, sendMessage, disconnect } = useWebSocketChat()
 
   // Use the auto-fetching token hook
-  const { token: authToken } = useAuthToken()
+  const { token: authToken, isLoading: isTokenLoading } = useAuthToken()
 
   const isConnectedRef = useRef(false)
   const currentResponseRef = useRef('')
+  const streamingSessionIdRef = useRef<string | null>(null)
 
   const updateMessagesWithErrorState = useCallback(() => {
     setMessages((prevMessages) => {
@@ -42,56 +49,108 @@ const useWebSocketStreamHandler = () => {
   }, [setMessages])
 
   const handleWebSocketMessage = useCallback(
-    (data: WebSocketMessage) => {
+    (data: WebSocketMessage, currentSessionId: string) => {
       if (data.sender === 'bot') {
         if (data.type === 'start') {
           // Bot is starting to respond
           currentResponseRef.current = ''
           setIsStreaming(true)
-          setMessages((prevMessages) => {
-            const newMessages = [...prevMessages]
-            const lastMessage = newMessages[newMessages.length - 1]
-            if (lastMessage && lastMessage.role === 'agent') {
-              lastMessage.progressStatus = 'Agent is typing...'
-            }
-            return newMessages
-          })
+          if (sessionIdRef.current === currentSessionId) {
+            setMessages((prevMessages) => {
+              const newMessages = [...prevMessages]
+              const lastMessage = newMessages[newMessages.length - 1]
+              if (lastMessage && lastMessage.role === 'agent') {
+                lastMessage.progressStatus = 'Agent is typing...'
+              }
+              return newMessages
+            })
+          }
         } else if (data.type === 'stream') {
           // Streaming content
           currentResponseRef.current += data.message
-          setMessages((prevMessages) => {
-            const newMessages = [...prevMessages]
-            const lastMessage = newMessages[newMessages.length - 1]
+          // Update chatSessions with partial content
+          setChatSessions((prev) => {
+            const sessionMessages = prev[currentSessionId] || []
+            const updatedMessages = [...sessionMessages]
+            const lastMessage = updatedMessages[updatedMessages.length - 1]
             if (lastMessage && lastMessage.role === 'agent') {
               lastMessage.content = currentResponseRef.current
-              // Clear progress status when actual content is streaming
               lastMessage.progressStatus = undefined
             }
-            return newMessages
+            return {
+              ...prev,
+              [currentSessionId]: updatedMessages
+            }
           })
+
+          if (sessionIdRef.current === currentSessionId) {
+            setMessages((prevMessages) => {
+              const newMessages = [...prevMessages]
+              const lastMessage = newMessages[newMessages.length - 1]
+              if (lastMessage && lastMessage.role === 'agent') {
+                lastMessage.content = currentResponseRef.current
+                // Clear progress status when actual content is streaming
+                lastMessage.progressStatus = undefined
+              }
+              return newMessages
+            })
+          }
         } else if (data.type === 'info') {
           // Info message - update progress status in the last agent message
           console.log('Info:', data.message)
-          setMessages((prevMessages) => {
-            const newMessages = [...prevMessages]
-            const lastMessage = newMessages[newMessages.length - 1]
+          // Update chatSessions with progress status
+          setChatSessions((prev) => {
+            const sessionMessages = prev[currentSessionId] || []
+            const updatedMessages = [...sessionMessages]
+            const lastMessage = updatedMessages[updatedMessages.length - 1]
             if (lastMessage && lastMessage.role === 'agent') {
               lastMessage.progressStatus = data.message
             }
-            return newMessages
+            return {
+              ...prev,
+              [currentSessionId]: updatedMessages
+            }
           })
+
+          if (sessionIdRef.current === currentSessionId) {
+            setMessages((prevMessages) => {
+              const newMessages = [...prevMessages]
+              const lastMessage = newMessages[newMessages.length - 1]
+              if (lastMessage && lastMessage.role === 'agent') {
+                lastMessage.progressStatus = data.message
+              }
+              return newMessages
+            })
+          }
         } else if (data.type === 'end') {
           // Response complete
           currentResponseRef.current += data.message
-          setMessages((prevMessages) => {
-            const newMessages = [...prevMessages]
-            const lastMessage = newMessages[newMessages.length - 1]
+          // Update chatSessions with the final message
+          setChatSessions((prev) => {
+            const sessionMessages = prev[currentSessionId] || []
+            const updatedMessages = [...sessionMessages]
+            const lastMessage = updatedMessages[updatedMessages.length - 1]
             if (lastMessage && lastMessage.role === 'agent') {
               lastMessage.content = currentResponseRef.current
-              lastMessage.progressStatus = undefined // Clear progress status on completion
+              lastMessage.progressStatus = undefined
             }
-            return newMessages
+            return {
+              ...prev,
+              [currentSessionId]: updatedMessages
+            }
           })
+
+          if (sessionIdRef.current === currentSessionId) {
+            setMessages((prevMessages) => {
+              const newMessages = [...prevMessages]
+              const lastMessage = newMessages[newMessages.length - 1]
+              if (lastMessage && lastMessage.role === 'agent') {
+                lastMessage.content = currentResponseRef.current
+                lastMessage.progressStatus = undefined // Clear progress status on completion
+              }
+              return newMessages
+            })
+          }
           setIsStreaming(false)
           focusChatInput()
           currentResponseRef.current = ''
@@ -111,7 +170,8 @@ const useWebSocketStreamHandler = () => {
       setIsStreaming,
       setStreamingErrorMessage,
       focusChatInput,
-      updateMessagesWithErrorState
+      updateMessagesWithErrorState,
+      setChatSessions
     ]
   )
 
@@ -122,7 +182,24 @@ const useWebSocketStreamHandler = () => {
       connect({
         endpoint: endpointUrl,
         authToken,
-        onMessage: handleWebSocketMessage,
+        onMessage: (data) => {
+          // We need to pass the session ID to the handler. 
+          // However, onMessage signature in useWebSocketChat doesn't support it directly if we bind it here.
+          // But handleWebSocketMessage needs to know the session ID of the *stream*.
+          // The WebSocket is persistent. The session ID is per *message*? 
+          // No, the WebSocket is for the chat.
+          // Actually, useWebSocketChat is a simple wrapper.
+          // We need to store the current stream's session ID in a ref?
+          // Or pass it when we send the message?
+          // The server response doesn't seem to include session ID in the WebSocket message (based on interface).
+          // So we must assume the response belongs to the *last* sent message's session?
+          // This is tricky with WebSocket if multiple sessions are active?
+          // But the UI only supports one active stream at a time.
+          // So we can use a ref to store the `streamingSessionId`.
+          if (streamingSessionIdRef.current) {
+            handleWebSocketMessage(data, streamingSessionIdRef.current)
+          }
+        },
         onOpen: () => {
           isConnectedRef.current = true
         },
@@ -130,7 +207,7 @@ const useWebSocketStreamHandler = () => {
           isConnectedRef.current = false
         },
         onError: (error) => {
-          console.error('WebSocket error:', error)
+          console.error('WebSocket connection failed')
           isConnectedRef.current = false
           setStreamingErrorMessage('WebSocket connection error')
         }
@@ -139,7 +216,10 @@ const useWebSocketStreamHandler = () => {
   }, [selectedEndpoint, authToken, connect, handleWebSocketMessage, setStreamingErrorMessage])
 
   const handleStreamResponse = useCallback(
-    async (input: string | FormData) => {
+    async (input: string | FormData, explicitSessionId?: string) => {
+      // Use explicit session ID if provided (from previous fix) or current session
+      // But we need to capture the session ID for this specific stream
+      const currentSessionId = explicitSessionId || sessionId || crypto.randomUUID()
       // Ensure WebSocket is connected
       ensureConnection()
 
@@ -178,12 +258,17 @@ const useWebSocketStreamHandler = () => {
         return prevMessages
       })
 
+      streamingSessionIdRef.current = currentSessionId
+      if (!sessionId) {
+        setSessionId(currentSessionId)
+      }
+
       // Add user message
       addMessage({
         role: 'user',
         content: message,
         created_at: Math.floor(Date.now() / 1000)
-      })
+      }, currentSessionId)
 
       // Add placeholder for agent response
       addMessage({
@@ -192,7 +277,7 @@ const useWebSocketStreamHandler = () => {
         tool_calls: [],
         streamingError: false,
         created_at: Math.floor(Date.now() / 1000) + 1
-      })
+      }, currentSessionId)
 
       // Send message via WebSocket
       const sent = sendMessage(message, {})
@@ -221,10 +306,10 @@ const useWebSocketStreamHandler = () => {
 
   // Connect on mount and when endpoint/token changes
   useEffect(() => {
-    if (authToken !== undefined) {
+    if (authToken !== undefined && !isTokenLoading) {
       ensureConnection()
     }
-  }, [ensureConnection, authToken])
+  }, [ensureConnection, authToken, isTokenLoading])
 
   return {
     handleStreamResponse,

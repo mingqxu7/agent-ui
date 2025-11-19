@@ -15,6 +15,7 @@ const MarkdownRenderer: FC<MarkdownRendererProps> = ({
   classname
 }) => {
   const useWebSocket = useStore((state) => state.useWebSocket)
+  const isStreaming = useStore((state) => state.isStreaming)
   const { handleStreamResponse: handleWsStreamResponse } = useWebSocketStreamHandler()
   const { handleStreamResponse: handleHttpStreamResponse } = useAIChatStreamHandler()
 
@@ -30,6 +31,9 @@ const MarkdownRenderer: FC<MarkdownRendererProps> = ({
       const handleClick = async (e: React.MouseEvent) => {
         e.preventDefault()
         e.stopPropagation()
+
+        if (isStreaming) return
+
         const question = decodeURIComponent(href.replace('question://', ''))
 
         // Directly submit the question using the stream handler
@@ -44,7 +48,10 @@ const MarkdownRenderer: FC<MarkdownRendererProps> = ({
       return (
         <span
           onClick={handleClick}
-          className="cursor-pointer text-primary underline hover:text-primary/80"
+          className={cn(
+            "text-primary underline",
+            isStreaming ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:text-primary/80"
+          )}
           role="button"
           tabIndex={0}
           onKeyDown={(e) => {

@@ -8,11 +8,13 @@ export default function Home() {
   const hasEnvToken = !!process.env.NEXT_PUBLIC_OS_SECURITY_KEY
   const envToken = process.env.NEXT_PUBLIC_OS_SECURITY_KEY || ''
   return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <div className="flex h-screen bg-background/80">
+    <div className="flex h-screen bg-background/80">
+      <Suspense fallback={<div>Loading Sidebar...</div>}>
         <Sidebar hasEnvToken={hasEnvToken} envToken={envToken} />
+      </Suspense>
+      <Suspense fallback={<div>Loading Chat...</div>}>
         <ChatArea />
-      </div>
-    </Suspense>
+      </Suspense>
+    </div>
   )
 }

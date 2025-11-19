@@ -60,6 +60,14 @@ interface Store {
   setInputMessage: (inputMessage: string) => void
   submitMessage: (() => void) | null
   setSubmitMessage: (submitFn: (() => void) | null) => void
+  chatSessions: Record<string, ChatMessage[]>
+  setChatSessions: (
+    chatSessions:
+      | Record<string, ChatMessage[]>
+      | ((
+        prev: Record<string, ChatMessage[]>
+      ) => Record<string, ChatMessage[]>)
+  ) => void
 }
 
 export const useStore = create<Store>()(
@@ -116,14 +124,24 @@ export const useStore = create<Store>()(
       inputMessage: '',
       setInputMessage: (inputMessage) => set(() => ({ inputMessage })),
       submitMessage: null,
-      setSubmitMessage: (submitFn) => set(() => ({ submitMessage: submitFn }))
+      setSubmitMessage: (submitFn) => set(() => ({ submitMessage: submitFn })),
+      chatSessions: {},
+      setChatSessions: (chatSessions) =>
+        set((state) => ({
+          chatSessions:
+            typeof chatSessions === 'function'
+              ? chatSessions(state.chatSessions)
+              : chatSessions
+        }))
     }),
     {
       name: 'endpoint-storage',
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         selectedEndpoint: state.selectedEndpoint,
-        useWebSocket: state.useWebSocket
+        useWebSocket: state.useWebSocket,
+        sessionsData: state.sessionsData,
+        chatSessions: state.chatSessions
       }),
       onRehydrateStorage: () => (state) => {
         state?.setHydrated?.()

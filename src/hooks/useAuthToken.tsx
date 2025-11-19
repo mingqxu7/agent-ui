@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useRef } from 'react'
+import { useEffect, useCallback, useRef, useState } from 'react'
 import { useStore } from '@/store'
 import { getTokenAPI } from '@/api/os'
 import { constructEndpointUrl } from '@/lib/constructEndpointUrl'
@@ -15,6 +15,7 @@ export default function useAuthToken() {
   const authToken = useStore((state) => state.authToken)
   const setAuthToken = useStore((state) => state.setAuthToken)
   const refreshTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
   const fetchToken = useCallback(async () => {
     if (!selectedEndpoint) return
@@ -51,15 +52,14 @@ export default function useAuthToken() {
       }
     } catch (error) {
       console.error('Failed to fetch auth token:', error)
+    } finally {
+      setIsLoading(false)
     }
   }, [selectedEndpoint, setAuthToken])
 
   // Fetch token on mount and when endpoint changes
   useEffect(() => {
-    // Only auto-fetch if no token is set
-    if (!authToken) {
-      fetchToken()
-    }
+    fetchToken()
 
     // Cleanup timer on unmount
     return () => {
@@ -67,7 +67,7 @@ export default function useAuthToken() {
         clearTimeout(refreshTimerRef.current)
       }
     }
-  }, [selectedEndpoint, fetchToken, authToken])
+  }, [selectedEndpoint, fetchToken])
 
   // Manual refresh function
   const refreshToken = useCallback(() => {
@@ -77,6 +77,7 @@ export default function useAuthToken() {
   return {
     token: authToken,
     refreshToken,
-    hasToken: !!authToken
+    hasToken: !!authToken,
+    isLoading
   }
 }

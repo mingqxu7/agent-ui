@@ -1,7 +1,5 @@
 'use client'
 import { Button } from '@/components/ui/button'
-import { ModeSelector } from '@/components/chat/Sidebar/ModeSelector'
-import { EntitySelector } from '@/components/chat/Sidebar/EntitySelector'
 import useChatActions from '@/hooks/useChatActions'
 import useAuthToken from '@/hooks/useAuthToken'
 import { useStore } from '@/store'
@@ -9,8 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useEffect } from 'react'
 import Icon from '@/components/ui/icon'
 import { getProviderIcon } from '@/lib/modelProvider'
-import Sessions from './Sessions'
-import AuthToken from './AuthToken'
+import ChatHistory from './ChatHistory'
 import { isValidUrl } from '@/lib/utils'
 import { toast } from 'sonner'
 import { useQueryState } from 'nuqs'
@@ -172,7 +169,7 @@ const Endpoint = () => {
                   <p className="text-xs font-medium text-muted">
                     {isMounted
                       ? truncateText(selectedEndpoint, 21) ||
-                        ENDPOINT_PLACEHOLDER
+                      ENDPOINT_PLACEHOLDER
                       : 'http://localhost:9000'}
                   </p>
                   <div
@@ -275,7 +272,6 @@ const Sidebar = ({
         {isMounted && (
           <>
             <Endpoint />
-            <AuthToken hasEnvToken={hasEnvToken} envToken={envToken} />
             {isEndpointActive && (
               <>
                 <motion.div
@@ -284,9 +280,6 @@ const Sidebar = ({
                   animate={{ opacity: 1 }}
                   transition={{ duration: 0.5, ease: 'easeInOut' }}
                 >
-                  <div className="text-xs font-medium uppercase text-primary">
-                    Mode
-                  </div>
                   {isEndpointLoading ? (
                     <div className="flex w-full flex-col gap-2">
                       {Array.from({ length: 3 }).map((_, index) => (
@@ -298,15 +291,13 @@ const Sidebar = ({
                     </div>
                   ) : (
                     <>
-                      <ModeSelector />
-                      <EntitySelector />
                       {selectedModel && (agentId || teamId) && (
                         <ModelDisplay model={selectedModel} />
                       )}
                     </>
                   )}
                 </motion.div>
-                <Sessions />
+                <ChatHistory />
               </>
             )}
           </>
