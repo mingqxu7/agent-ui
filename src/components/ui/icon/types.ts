@@ -2,6 +2,7 @@ import { type ElementType } from 'react'
 
 export type IconType =
   | 'mistral'
+  | 'banaba'
   | 'gemini'
   | 'aws'
   | 'azure'

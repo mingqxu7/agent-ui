@@ -399,6 +399,41 @@ export const FireworksLogo: FC = ({ ...props }) => (
   </svg>
 )
 
+export const BanabaIcon: FC = ({ ...props }) => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 512 512"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    {...props}
+  >
+    <circle cx="256" cy="256" r="240" fill="#4F46E5" stroke="#3730A3" strokeWidth="8" />
+    <rect x="140" y="160" width="232" height="280" rx="12" fill="#F8FAFC" stroke="#E2E8F0" strokeWidth="4" />
+    <rect x="140" y="160" width="24" height="280" rx="12" fill="#1E293B" />
+    <rect x="180" y="180" width="172" height="240" rx="4" fill="#FEFEFE" />
+    <g transform="translate(256, 240)">
+      <rect x="-6" y="-40" width="12" height="80" rx="6" fill="#DC2626" />
+      <rect x="-24" y="-6" width="48" height="12" rx="6" fill="#DC2626" />
+    </g>
+    <rect x="200" y="320" width="120" height="4" rx="2" fill="#94A3B8" />
+    <rect x="200" y="340" width="100" height="4" rx="2" fill="#94A3B8" />
+    <rect x="200" y="360" width="130" height="4" rx="2" fill="#94A3B8" />
+    <rect x="200" y="380" width="80" height="4" rx="2" fill="#94A3B8" />
+    <circle cx="190" cy="322" r="3" fill="#6366F1" />
+    <circle cx="190" cy="342" r="3" fill="#6366F1" />
+    <circle cx="190" cy="362" r="3" fill="#6366F1" />
+    <circle cx="190" cy="382" r="3" fill="#6366F1" />
+    <rect x="340" y="160" width="16" height="60" fill="#F59E0B" />
+    <polygon points="340,220 348,210 356,220" fill="#F59E0B" />
+    <g opacity="0.3">
+      <rect x="254" y="120" width="4" height="20" rx="2" fill="#FCD34D" />
+      <rect x="270" y="130" width="4" height="15" rx="2" fill="#FCD34D" transform="rotate(20 272 137.5)" />
+      <rect x="238" y="130" width="4" height="15" rx="2" fill="#FCD34D" transform="rotate(-20 240 137.5)" />
+    </g>
+  </svg>
+)
+
 export const AzureLogo: FC = ({ ...props }) => (
   <svg
     width="21"

@@ -20,7 +20,8 @@ import {
   TailwindTag,
   AgnoTag,
   ReasoningIcon,
-  ReferencesIcon
+  ReferencesIcon,
+  BanabaIcon
 } from './custom-icons'
 import { IconTypeMap } from './types'
 import {
@@ -42,6 +43,7 @@ import { PlusIcon } from '@radix-ui/react-icons'
 
 export const ICONS: IconTypeMap = {
   'open-ai': OpenAILogo,
+  banaba: BanabaIcon,
   mistral: MistralLogo,
   gemini: GeminiLogo,
   aws: AwsLogo,
