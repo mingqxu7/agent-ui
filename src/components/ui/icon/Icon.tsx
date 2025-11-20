@@ -16,6 +16,7 @@ const Icon: FC<IconProps> = ({
 
   return (
     <IconElement
+      suppressHydrationWarning
       className={cn(
         color && !disabled ? `text-${color}` : 'text-primary',
         disabled && 'cursor-default text-muted/50',
