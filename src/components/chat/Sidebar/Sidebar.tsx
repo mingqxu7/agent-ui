@@ -104,7 +104,7 @@ const Sidebar = () => {
     if (hydrated) initialize()
 
     return () => window.removeEventListener('resize', checkMobile)
-  }, [selectedEndpoint, initialize, hydrated, mode])
+  }, [selectedEndpoint, initialize, hydrated, mode, setIsSidebarCollapsed])
 
   const handleNewChat = () => {
     clearChat()
