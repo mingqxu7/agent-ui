@@ -14,6 +14,8 @@ import React, { type FC } from 'react'
 
 import Icon from '@/components/ui/icon'
 import ChatBlankState from './ChatBlankState'
+import { useStore } from '@/store'
+import { useQueryState } from 'nuqs'
 
 interface MessageListProps {
   messages: ChatMessage[]
@@ -59,7 +61,12 @@ const References: FC<ReferenceProps> = ({ references }) => (
   </div>
 )
 
-const AgentMessageWrapper = ({ message }: MessageWrapperProps) => {
+interface AgentMessageWrapperProps extends MessageWrapperProps {
+  onDelete: () => void
+  isLastMessage: boolean
+}
+
+const AgentMessageWrapper = ({ message, onDelete, isLastMessage }: AgentMessageWrapperProps) => {
   return (
     <div className="flex flex-col gap-y-9">
       {message.extra_data?.reasoning_steps &&
@@ -121,7 +128,7 @@ const AgentMessageWrapper = ({ message }: MessageWrapperProps) => {
           </div>
         </div>
       )}
-      <AgentMessage message={message} />
+      <AgentMessage message={message} onDelete={onDelete} isLastMessage={isLastMessage} />
     </div>
   )
 }
@@ -152,6 +159,31 @@ const ToolComponent = memo(({ tools }: ToolCallProps) => (
 ))
 ToolComponent.displayName = 'ToolComponent'
 const Messages = ({ messages }: MessageListProps) => {
+  const { setMessages, setChatSessions } = useStore()
+  const [sessionId] = useQueryState('session')
+
+  const handleDeleteMessage = (indexToDelete: number) => {
+    const messageToDelete = messages[indexToDelete]
+    const indicesToDelete = [indexToDelete]
+
+    if (messageToDelete.role === 'agent' && indexToDelete > 0) {
+      const previousMessage = messages[indexToDelete - 1]
+      if (previousMessage.role === 'user') {
+        indicesToDelete.push(indexToDelete - 1)
+      }
+    }
+
+    const newMessages = messages.filter((_, index) => !indicesToDelete.includes(index))
+    setMessages(newMessages)
+
+    if (sessionId) {
+      setChatSessions((prev) => ({
+        ...prev,
+        [sessionId]: newMessages
+      }))
+    }
+  }
+
   if (messages.length === 0) {
     return <ChatBlankState />
   }
@@ -168,10 +200,11 @@ const Messages = ({ messages }: MessageListProps) => {
               key={key}
               message={message}
               isLastMessage={isLastMessage}
+              onDelete={() => handleDeleteMessage(index)}
             />
           )
         }
-        return <UserMessage key={key} message={message} />
+        return <UserMessage key={key} message={message} isLastMessage={isLastMessage} />
       })}
     </>
   )

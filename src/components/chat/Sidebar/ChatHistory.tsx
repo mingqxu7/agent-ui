@@ -11,7 +11,20 @@ import relativeTime from 'dayjs/plugin/relativeTime'
 
 dayjs.extend(relativeTime)
 
-const ChatHistory = () => {
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog'
+
+interface ChatHistoryProps {
+    onChatSelect?: () => void
+}
+
+const ChatHistory = ({ onChatSelect }: ChatHistoryProps) => {
     const {
         sessionsData,
         setSessionsData,
@@ -25,6 +38,8 @@ const ChatHistory = () => {
     const [, setAgentId] = useQueryState('agent')
     const [, setTeamId] = useQueryState('team')
     const [isMobile, setIsMobile] = useState(false)
+    const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false)
+    const [sessionToDelete, setSessionToDelete] = useState<string | null>(null)
 
     useEffect(() => {
         const checkMobile = () => {
@@ -47,31 +62,42 @@ const ChatHistory = () => {
             setMessages(messages)
             setAgentId(null)
             setTeamId(null)
+            setTeamId(null)
             setIsChatLoading(false)
+            onChatSelect?.()
         }, 300)
     }
 
-    const handleDeleteSession = (e: React.MouseEvent, session_id: string) => {
+    const handleDeleteClick = (e: React.MouseEvent, session_id: string) => {
         e.stopPropagation()
         if (isStreaming) return
+        setSessionToDelete(session_id)
+        setDeleteConfirmationOpen(true)
+    }
+
+    const confirmDelete = () => {
+        if (!sessionToDelete) return
 
         // Remove from sessionsData
         setSessionsData((prev) =>
-            prev ? prev.filter((s) => s.session_id !== session_id) : []
+            prev ? prev.filter((s) => s.session_id !== sessionToDelete) : []
         )
 
         // Remove from chatSessions
         setChatSessions((prev) => {
             const newState = { ...prev }
-            delete newState[session_id]
+            delete newState[sessionToDelete]
             return newState
         })
 
         // If current session is deleted, clear messages
-        if (sessionId === session_id) {
+        if (sessionId === sessionToDelete) {
             setSessionId(null)
             setMessages([])
         }
+
+        setDeleteConfirmationOpen(false)
+        setSessionToDelete(null)
     }
 
     if (!sessionsData || sessionsData.length === 0) {
@@ -125,7 +151,7 @@ const ChatHistory = () => {
                                             : 'opacity-0 group-hover:opacity-100'
                                         }`}
                                     disabled={isStreaming}
-                                    onClick={(e) => handleDeleteSession(e, session.session_id)}
+                                    onClick={(e) => handleDeleteClick(e, session.session_id)}
                                 >
                                     <Icon type="trash" size="xs" />
                                 </Button>
@@ -134,6 +160,25 @@ const ChatHistory = () => {
                     ))}
                 </AnimatePresence>
             </div>
+
+            <Dialog open={deleteConfirmationOpen} onOpenChange={setDeleteConfirmationOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Delete Chat</DialogTitle>
+                        <DialogDescription>
+                            Are you sure you want to delete this chat? This action cannot be undone.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setDeleteConfirmationOpen(false)}>
+                            Cancel
+                        </Button>
+                        <Button variant="destructive" onClick={confirmDelete}>
+                            Delete
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }

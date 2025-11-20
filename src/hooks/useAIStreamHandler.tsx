@@ -473,7 +473,6 @@ const useAIChatStreamHandler = () => {
       setSessionsData,
       sessionId,
       setSessionId,
-      setSessionId,
       processChunkToolCalls,
       setChatSessions
     ]

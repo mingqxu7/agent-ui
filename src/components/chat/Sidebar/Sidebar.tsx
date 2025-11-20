@@ -176,7 +176,7 @@ const Sidebar = () => {
                       </>
                     )}
                   </motion.div>
-                  <ChatHistory />
+                  <ChatHistory onChatSelect={() => isMobile && setIsCollapsed(true)} />
                 </>
               )}
             </>

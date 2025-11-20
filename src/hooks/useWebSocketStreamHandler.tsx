@@ -266,8 +266,6 @@ const useWebSocketStreamHandler = ({ shouldAutoConnect = true }: { shouldAutoCon
       sendMessage,
       setIsStreaming,
       setStreamingErrorMessage,
-      setIsStreaming,
-      setStreamingErrorMessage,
       updateMessagesWithErrorState,
       sessionId,
       setSessionId
