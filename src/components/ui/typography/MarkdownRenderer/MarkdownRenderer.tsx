@@ -2,6 +2,7 @@ import { type FC } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import remarkBreaks from 'remark-breaks'
+import { useStickToBottomContext } from 'use-stick-to-bottom'
 
 import { cn } from '@/lib/utils'
 import { useStore } from '@/store'
@@ -18,6 +19,7 @@ const MarkdownRenderer: FC<MarkdownRendererProps> = ({
   const isStreaming = useStore((state) => state.isStreaming)
   const { handleStreamResponse: handleWsStreamResponse } = useWebSocketStreamHandler({ shouldAutoConnect: false })
   const { handleStreamResponse: handleHttpStreamResponse } = useAIChatStreamHandler()
+  const { scrollToBottom } = useStickToBottomContext()
 
   // Select the appropriate handler based on mode
   const handleStreamResponse = useWebSocket ? handleWsStreamResponse : handleHttpStreamResponse
@@ -48,6 +50,8 @@ const MarkdownRenderer: FC<MarkdownRendererProps> = ({
         // Directly submit the question using the stream handler
         try {
           await handleStreamResponse(question)
+          // Scroll to bottom after submitting the question to ensure user sees the response
+          scrollToBottom({ animation: 'smooth' })
         } catch (error) {
           console.error('Error submitting question:', error)
         }
