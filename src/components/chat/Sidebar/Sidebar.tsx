@@ -15,7 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 const SidebarHeader = () => (
   <div className="flex items-center gap-2">
     <Icon type="agno" size="xs" />
-    <span className="text-xs font-medium uppercase text-white">Agent UI</span>
+    <span className="text-xs font-medium uppercase text-white">Faith Q&A</span>
   </div>
 )
 
