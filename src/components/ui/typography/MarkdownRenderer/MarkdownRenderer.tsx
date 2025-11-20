@@ -2,6 +2,7 @@ import { type FC } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import remarkBreaks from 'remark-breaks'
+import { useStickToBottomContext } from 'use-stick-to-bottom'
 
 import { cn } from '@/lib/utils'
 import { useStore } from '@/store'
@@ -18,6 +19,15 @@ const MarkdownRenderer: FC<MarkdownRendererProps> = ({
   const isStreaming = useStore((state) => state.isStreaming)
   const { handleStreamResponse: handleWsStreamResponse } = useWebSocketStreamHandler({ shouldAutoConnect: false })
   const { handleStreamResponse: handleHttpStreamResponse } = useAIChatStreamHandler()
+
+  // Safe usage of stick-to-bottom context
+  let scrollToBottom: (() => void) | undefined
+  try {
+    const context = useStickToBottomContext()
+    scrollToBottom = context.scrollToBottom
+  } catch (e) {
+    // Context not found, ignore
+  }
 
   // Select the appropriate handler based on mode
   const handleStreamResponse = useWebSocket ? handleWsStreamResponse : handleHttpStreamResponse
@@ -42,6 +52,10 @@ const MarkdownRenderer: FC<MarkdownRendererProps> = ({
         e.stopPropagation()
 
         if (isStreaming) return
+
+        if (scrollToBottom) {
+          scrollToBottom()
+        }
 
         const question = decodeURIComponent(href.replace('question://', ''))
 
