@@ -139,7 +139,7 @@ const AgentMessage = ({ message, onDelete, isLastMessage }: MessageProps) => {
       </div>
       <div className="flex w-full flex-col gap-2">
         {messageContent}
-        <div className="flex justify-end">
+        <div className="flex justify-start">
           {!isStreaming || !isLastMessage ? (
             <MessageActions
               content={message.content || message.response_audio?.transcript || ''}
