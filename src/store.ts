@@ -54,6 +54,8 @@ interface Store {
   ) => void
   isSessionsLoading: boolean
   setIsSessionsLoading: (isSessionsLoading: boolean) => void
+  isChatLoading: boolean
+  setIsChatLoading: (isChatLoading: boolean) => void
   useWebSocket: boolean
   setUseWebSocket: (useWebSocket: boolean) => void
   inputMessage: string
@@ -119,6 +121,8 @@ export const useStore = create<Store>()(
       isSessionsLoading: false,
       setIsSessionsLoading: (isSessionsLoading) =>
         set(() => ({ isSessionsLoading })),
+      isChatLoading: false,
+      setIsChatLoading: (isChatLoading) => set(() => ({ isChatLoading })),
       useWebSocket: true,
       setUseWebSocket: (useWebSocket) => set(() => ({ useWebSocket })),
       inputMessage: '',

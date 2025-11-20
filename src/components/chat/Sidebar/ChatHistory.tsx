@@ -19,19 +19,37 @@ const ChatHistory = () => {
         setChatSessions,
         setMessages,
         selectedEndpoint,
-        isStreaming
+        isStreaming,
+        setIsChatLoading
     } = useStore()
     const [sessionId, setSessionId] = useQueryState('session')
     const [, setAgentId] = useQueryState('agent')
     const [, setTeamId] = useQueryState('team')
+    const [isMobile, setIsMobile] = useState(false)
+
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 768)
+        }
+        checkMobile()
+        window.addEventListener('resize', checkMobile)
+        return () => window.removeEventListener('resize', checkMobile)
+    }, [])
 
     const handleSelectSession = (session: SessionEntry) => {
         if (isStreaming) return
-        setSessionId(session.session_id)
-        const messages = chatSessions[session.session_id] || []
-        setMessages(messages)
-        setAgentId(null)
-        setTeamId(null)
+
+        setIsChatLoading(true)
+
+        // Small delay to show loading state
+        setTimeout(() => {
+            setSessionId(session.session_id)
+            const messages = chatSessions[session.session_id] || []
+            setMessages(messages)
+            setAgentId(null)
+            setTeamId(null)
+            setIsChatLoading(false)
+        }, 300)
     }
 
     const handleDeleteSession = (e: React.MouseEvent, session_id: string) => {
@@ -101,7 +119,11 @@ const ChatHistory = () => {
                                 <Button
                                     variant="ghost"
                                     size="icon"
-                                    className={`h-6 w-6 transition-opacity hover:bg-destructive/10 hover:text-destructive ${isStreaming ? 'cursor-not-allowed opacity-0' : 'opacity-0 group-hover:opacity-100'
+                                    className={`h-6 w-6 transition-opacity hover:bg-destructive/10 hover:text-destructive ${isStreaming
+                                        ? 'cursor-not-allowed opacity-0'
+                                        : isMobile
+                                            ? 'opacity-100'
+                                            : 'opacity-0 group-hover:opacity-100'
                                         }`}
                                     disabled={isStreaming}
                                     onClick={(e) => handleDeleteSession(e, session.session_id)}
