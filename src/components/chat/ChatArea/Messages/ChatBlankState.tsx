@@ -45,11 +45,14 @@ const ChatBlankState = () => {
   const [description, setDescription] = useState(
     'Grounded in true Christian Faith'
   )
+  const [isChinese, setIsChinese] = useState(false)
 
   useEffect(() => {
     if (navigator.language.startsWith('zh')) {
       setTitle('基督教信仰问答')
-      setDescription('扎根于纯正的基督教信仰')
+      setDescription('向下扎根、向上生长')
+      setDescription('向下扎根、向上生长')
+      setIsChinese(true)
     }
   }, [])
 
@@ -77,6 +80,17 @@ const ChatBlankState = () => {
         >
           {description}
         </motion.p>
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.45 }}
+        >
+          <span className="flex items-center justify-center gap-1 text-sm text-muted-foreground/80">
+            {isChinese ? '(点击 ' : '(Click '}
+            <Icon type="sheet" size="xs" className="inline-block rotate-180" />
+            {isChinese ? ' 查看历史记录)' : ' to view chat history)'}
+          </span>
+        </motion.div>
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
