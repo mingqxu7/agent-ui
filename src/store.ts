@@ -62,6 +62,8 @@ interface Store {
   setInputMessage: (inputMessage: string) => void
   submitMessage: (() => void) | null
   setSubmitMessage: (submitFn: (() => void) | null) => void
+  retryMessage: ((message: string) => void) | null
+  setRetryMessage: (retryFn: ((message: string) => void) | null) => void
   chatSessions: Record<string, ChatMessage[]>
   setChatSessions: (
     chatSessions:
@@ -131,6 +133,8 @@ export const useStore = create<Store>()(
       setInputMessage: (inputMessage) => set(() => ({ inputMessage })),
       submitMessage: null,
       setSubmitMessage: (submitFn) => set(() => ({ submitMessage: submitFn })),
+      retryMessage: null,
+      setRetryMessage: (retryFn) => set(() => ({ retryMessage: retryFn })),
       chatSessions: {},
       setChatSessions: (chatSessions) =>
         set((state) => ({

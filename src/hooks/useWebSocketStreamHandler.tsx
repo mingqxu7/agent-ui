@@ -36,6 +36,7 @@ const useWebSocketStreamHandler = ({ shouldAutoConnect = true }: { shouldAutoCon
   const isConnectedRef = useRef(false)
   const currentResponseRef = useRef('')
   const streamingSessionIdRef = useRef<string | null>(null)
+  const isCurrentlyStreamingRef = useRef(false)
 
   const updateMessagesWithErrorState = useCallback(() => {
     setMessages((prevMessages) => {
@@ -54,6 +55,7 @@ const useWebSocketStreamHandler = ({ shouldAutoConnect = true }: { shouldAutoCon
         if (data.type === 'start') {
           // Bot is starting to respond
           currentResponseRef.current = ''
+          isCurrentlyStreamingRef.current = true
           setIsStreaming(true)
           if (sessionIdRef.current === currentSessionId) {
             setMessages((prevMessages) => {
@@ -125,6 +127,7 @@ const useWebSocketStreamHandler = ({ shouldAutoConnect = true }: { shouldAutoCon
         } else if (data.type === 'end') {
           // Response complete
           currentResponseRef.current += data.message
+          isCurrentlyStreamingRef.current = false
           // Update chatSessions with the final message
           setChatSessions((prev) => {
             const sessionMessages = prev[currentSessionId] || []
@@ -157,6 +160,7 @@ const useWebSocketStreamHandler = ({ shouldAutoConnect = true }: { shouldAutoCon
         } else if (data.type === 'error') {
           // Error occurred
           currentResponseRef.current += data.message
+          isCurrentlyStreamingRef.current = false
           updateMessagesWithErrorState()
           setStreamingErrorMessage(data.message)
           setIsStreaming(false)
@@ -191,6 +195,43 @@ const useWebSocketStreamHandler = ({ shouldAutoConnect = true }: { shouldAutoCon
       },
       onClose: () => {
         isConnectedRef.current = false
+
+        // If connection closes while actively streaming, mark message as interrupted
+        if (isCurrentlyStreamingRef.current && streamingSessionIdRef.current) {
+          const sessionId = streamingSessionIdRef.current
+          console.log('Connection closed during streaming, marking message as interrupted')
+
+          // Mark message as interrupted in chatSessions
+          setChatSessions((prev) => {
+            const sessionMessages = prev[sessionId] || []
+            const updatedMessages = [...sessionMessages]
+            const lastMessage = updatedMessages[updatedMessages.length - 1]
+            if (lastMessage && lastMessage.role === 'agent') {
+              lastMessage.connectionInterrupted = true
+              lastMessage.progressStatus = undefined
+            }
+            return {
+              ...prev,
+              [sessionId]: updatedMessages
+            }
+          })
+
+          // Also update current view if viewing this session
+          if (sessionIdRef.current === sessionId) {
+            setMessages((prevMessages) => {
+              const newMessages = [...prevMessages]
+              const lastMessage = newMessages[newMessages.length - 1]
+              if (lastMessage && lastMessage.role === 'agent') {
+                lastMessage.connectionInterrupted = true
+                lastMessage.progressStatus = undefined
+              }
+              return newMessages
+            })
+          }
+
+          isCurrentlyStreamingRef.current = false
+          setIsStreaming(false)
+        }
       },
       onError: () => {
         console.error('WebSocket connection failed')
@@ -198,7 +239,7 @@ const useWebSocketStreamHandler = ({ shouldAutoConnect = true }: { shouldAutoCon
         setStreamingErrorMessage('WebSocket connection error')
       }
     })
-  }, [selectedEndpoint, authToken, connect, handleWebSocketMessage, setStreamingErrorMessage])
+  }, [selectedEndpoint, authToken, connect, handleWebSocketMessage, setStreamingErrorMessage, setChatSessions, setMessages, setIsStreaming])
 
   const handleStreamResponse = useCallback(
     async (input: string | FormData, explicitSessionId?: string) => {

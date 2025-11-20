@@ -10,7 +10,7 @@ import { useQueryState } from 'nuqs'
 import Icon from '@/components/ui/icon'
 
 const ChatInput = () => {
-  const { chatInputRef, useWebSocket, isEndpointActive, inputMessage, setInputMessage, setSubmitMessage } = useStore()
+  const { chatInputRef, useWebSocket, isEndpointActive, inputMessage, setInputMessage, setSubmitMessage, setRetryMessage } = useStore()
 
   const { handleStreamResponse: handleHttpStreamResponse } = useAIChatStreamHandler()
   const { handleStreamResponse: handleWsStreamResponse } = useWebSocketStreamHandler({ shouldAutoConnect: true })
@@ -40,11 +40,35 @@ const ChatInput = () => {
     }
   }, [inputMessage, setInputMessage, handleStreamResponse])
 
+  const handleRetry = useCallback(async (message: string) => {
+    console.log('[ChatInput] handleRetry called with message:', message)
+    try {
+      await handleStreamResponse(message)
+      console.log('[ChatInput] handleStreamResponse completed')
+    } catch (error) {
+      console.error('[ChatInput] Error in retry:', error)
+      toast.error(
+        `Error in retry: ${error instanceof Error ? error.message : String(error)
+        }`
+      )
+    }
+  }, [handleStreamResponse])
+
   // Register the submit function in the store so it can be called from elsewhere
   useEffect(() => {
     setSubmitMessage(() => handleSubmit)
     return () => setSubmitMessage(null)
   }, [handleSubmit, setSubmitMessage])
+
+  // Register the retry function in the store
+  useEffect(() => {
+    console.log('[ChatInput] Registering retryMessage function')
+    setRetryMessage(handleRetry)
+    return () => {
+      console.log('[ChatInput] Unregistering retryMessage function')
+      setRetryMessage(null)
+    }
+  }, [handleRetry, setRetryMessage])
 
   return (
     <div className="relative mx-auto mb-1 flex w-full max-w-2xl items-end justify-center gap-x-2 font-geist">

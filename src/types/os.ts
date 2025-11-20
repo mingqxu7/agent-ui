@@ -210,6 +210,7 @@ export interface ChatMessage {
   audio?: AudioData[]
   response_audio?: ResponseAudio
   progressStatus?: string
+  connectionInterrupted?: boolean  // Marks messages that were cut off due to connection loss
 }
 
 export interface AgentDetails {

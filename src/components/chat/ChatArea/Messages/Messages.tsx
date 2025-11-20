@@ -63,10 +63,11 @@ const References: FC<ReferenceProps> = ({ references }) => (
 
 interface AgentMessageWrapperProps extends MessageWrapperProps {
   onDelete: () => void
+  onRetry: () => void
   isLastMessage: boolean
 }
 
-const AgentMessageWrapper = ({ message, onDelete, isLastMessage }: AgentMessageWrapperProps) => {
+const AgentMessageWrapper = ({ message, onDelete, onRetry, isLastMessage }: AgentMessageWrapperProps) => {
   return (
     <div className="flex flex-col gap-y-9">
       {message.extra_data?.reasoning_steps &&
@@ -128,7 +129,7 @@ const AgentMessageWrapper = ({ message, onDelete, isLastMessage }: AgentMessageW
           </div>
         </div>
       )}
-      <AgentMessage message={message} onDelete={onDelete} isLastMessage={isLastMessage} />
+      <AgentMessage message={message} onDelete={onDelete} onRetry={onRetry} isLastMessage={isLastMessage} />
     </div>
   )
 }
@@ -159,7 +160,7 @@ const ToolComponent = memo(({ tools }: ToolCallProps) => (
 ))
 ToolComponent.displayName = 'ToolComponent'
 const Messages = ({ messages }: MessageListProps) => {
-  const { setMessages, setChatSessions } = useStore()
+  const { setMessages, setChatSessions, retryMessage } = useStore()
   const [sessionId] = useQueryState('session')
 
   const handleDeleteMessage = (indexToDelete: number) => {
@@ -184,6 +185,41 @@ const Messages = ({ messages }: MessageListProps) => {
     }
   }
 
+  const handleRetryMessage = (indexToRetry: number) => {
+    console.log('[Retry] Starting retry for message at index:', indexToRetry)
+    // Find the user message that triggered this agent response
+    if (indexToRetry > 0) {
+      const previousMessage = messages[indexToRetry - 1]
+      console.log('[Retry] Previous message:', previousMessage)
+      if (previousMessage.role === 'user') {
+        // Delete both the user message and the interrupted agent response
+        const newMessages = messages.filter((_, index) =>
+          index !== indexToRetry && index !== indexToRetry - 1
+        )
+        setMessages(newMessages)
+
+        if (sessionId) {
+          setChatSessions((prev) => ({
+            ...prev,
+            [sessionId]: newMessages
+          }))
+        }
+
+        // Retry sending the original user message automatically
+        console.log('[Retry] retryMessage function available?', !!retryMessage)
+        if (retryMessage) {
+          console.log('[Retry] Calling retryMessage with:', previousMessage.content)
+          // Use setTimeout to allow state updates to complete
+          setTimeout(() => {
+            retryMessage(previousMessage.content)
+          }, 100)
+        } else {
+          console.error('[Retry] retryMessage function not available')
+        }
+      }
+    }
+  }
+
   if (messages.length === 0) {
     return <ChatBlankState />
   }
@@ -201,6 +237,7 @@ const Messages = ({ messages }: MessageListProps) => {
               message={message}
               isLastMessage={isLastMessage}
               onDelete={() => handleDeleteMessage(index)}
+              onRetry={() => handleRetryMessage(index)}
             />
           )
         }

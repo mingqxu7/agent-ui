@@ -7,10 +7,12 @@ import Images from './Multimedia/Images'
 import Audios from './Multimedia/Audios'
 import AgentThinkingLoader from './AgentThinkingLoader'
 import ProgressIndicator from './ProgressIndicator'
+import InterruptedMessage from './InterruptedMessage'
 
 interface MessageProps {
   message: ChatMessage
   onDelete?: () => void
+  onRetry?: () => void
   isLastMessage?: boolean
 }
 
@@ -69,10 +71,22 @@ const MessageActions = ({ content, onDelete }: { content: string; onDelete?: () 
   )
 }
 
-const AgentMessage = ({ message, onDelete, isLastMessage }: MessageProps) => {
+const AgentMessage = ({ message, onDelete, onRetry, isLastMessage }: MessageProps) => {
   const { streamingErrorMessage, isStreaming } = useStore()
   let messageContent
-  if (message.streamingError) {
+  if (message.connectionInterrupted && onRetry) {
+    // Show interrupted message with retry button
+    messageContent = (
+      <div className="flex flex-col gap-4">
+        {message.content && (
+          <div className="flex w-full flex-col gap-4">
+            <MarkdownRenderer>{message.content}</MarkdownRenderer>
+          </div>
+        )}
+        <InterruptedMessage onRetry={onRetry} />
+      </div>
+    )
+  } else if (message.streamingError) {
     messageContent = (
       <p className="text-destructive">
         Oops! Something went wrong while streaming.{' '}
