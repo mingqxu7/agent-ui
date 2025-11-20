@@ -13,14 +13,23 @@ const ChatArea = () => {
     setIsMounted(true)
   }, [])
 
-  const { isChatLoading } = useStore()
+  const { isChatLoading, setIsSidebarCollapsed } = useStore()
 
   if (!isMounted) {
     return null
   }
 
+  const handleClick = () => {
+    if (window.innerWidth < 768) {
+      setIsSidebarCollapsed(true)
+    }
+  }
+
   return (
-    <main className="relative m-1.5 flex flex-grow flex-col rounded-xl bg-background">
+    <main
+      className="relative m-1.5 flex flex-grow flex-col rounded-xl bg-background"
+      onClick={handleClick}
+    >
       {isChatLoading ? (
         <div className="flex h-full w-full items-center justify-center">
           <Icon type="loading" className="animate-spin text-primary" size="lg" />

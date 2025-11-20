@@ -50,9 +50,11 @@ const ModelDisplay = ({ model }: { model: string }) => (
 
 
 const Sidebar = () => {
-  const [isCollapsed, setIsCollapsed] = useState(false)
+
   const { clearChat, focusChatInput, initialize } = useChatActions()
   const {
+    isSidebarCollapsed,
+    setIsSidebarCollapsed,
     messages,
     selectedEndpoint,
     isEndpointActive,
@@ -76,7 +78,7 @@ const Sidebar = () => {
       const mobile = window.innerWidth < 768
       setIsMobile(mobile)
       if (mobile) {
-        setIsCollapsed(true)
+        setIsSidebarCollapsed(true)
       }
     }
 
@@ -108,42 +110,42 @@ const Sidebar = () => {
     clearChat()
     focusChatInput()
     if (isMobile) {
-      setIsCollapsed(true)
+      setIsSidebarCollapsed(true)
     }
   }
 
   return (
     <>
       <motion.aside
-        className={`absolute z-50 flex h-screen shrink-0 grow-0 flex-col overflow-hidden bg-background px-2 py-3 font-dmmono md:relative md:border-none ${isCollapsed ? 'border-none' : 'border-r'}`}
+        className={`absolute z-50 flex h-screen shrink-0 grow-0 flex-col overflow-hidden bg-background px-2 py-3 font-dmmono md:relative md:border-none ${isSidebarCollapsed ? 'border-none' : 'border-r'}`}
         initial={{ width: '16rem' }}
-        animate={{ width: isCollapsed ? (isMobile ? 0 : '2.5rem') : '16rem' }}
+        animate={{ width: isSidebarCollapsed ? (isMobile ? 0 : '2.5rem') : '16rem' }}
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
         style={{
-          paddingLeft: isCollapsed && isMobile ? 0 : undefined,
-          paddingRight: isCollapsed && isMobile ? 0 : undefined,
+          paddingLeft: isSidebarCollapsed && isMobile ? 0 : undefined,
+          paddingRight: isSidebarCollapsed && isMobile ? 0 : undefined,
         }}
       >
         <motion.button
-          onClick={() => setIsCollapsed(!isCollapsed)}
+          onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
           className="absolute right-2 top-2 z-10 p-1"
-          aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           type="button"
           whileTap={{ scale: 0.95 }}
         >
           <Icon
             type="sheet"
             size="xs"
-            className={`transform ${isCollapsed ? 'rotate-180' : 'rotate-0'}`}
+            className={`transform ${isSidebarCollapsed ? 'rotate-180' : 'rotate-0'}`}
           />
         </motion.button>
         <motion.div
           className="w-60 space-y-5"
           initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: isCollapsed ? 0 : 1, x: isCollapsed ? -20 : 0 }}
+          animate={{ opacity: isSidebarCollapsed ? 0 : 1, x: isSidebarCollapsed ? -20 : 0 }}
           transition={{ duration: 0.3, ease: 'easeInOut' }}
           style={{
-            pointerEvents: isCollapsed ? 'none' : 'auto'
+            pointerEvents: isSidebarCollapsed ? 'none' : 'auto'
           }}
         >
           <SidebarHeader />
@@ -179,7 +181,7 @@ const Sidebar = () => {
                       </>
                     )}
                   </motion.div>
-                  <ChatHistory onChatSelect={() => isMobile && setIsCollapsed(true)} />
+                  <ChatHistory onChatSelect={() => isMobile && setIsSidebarCollapsed(true)} />
                 </>
               )}
             </>
@@ -188,9 +190,9 @@ const Sidebar = () => {
       </motion.aside>
 
       {/* Mobile Floating Toggle Button */}
-      {isMounted && isMobile && isCollapsed && (
+      {isMounted && isMobile && isSidebarCollapsed && (
         <Button
-          onClick={() => setIsCollapsed(false)}
+          onClick={() => setIsSidebarCollapsed(false)}
           className="fixed left-4 top-4 z-50 h-10 w-10 rounded-xl bg-background border shadow-sm md:hidden"
           size="icon"
           variant="ghost"

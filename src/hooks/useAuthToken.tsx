@@ -20,6 +20,18 @@ export default function useAuthToken() {
   const fetchToken = useCallback(async () => {
     if (!selectedEndpoint) return
 
+    // Avoid fetching from localhost if we are not on localhost (e.g. mobile)
+    // The Sidebar component will update the endpoint shortly.
+    if (
+      selectedEndpoint.includes('localhost') &&
+      typeof window !== 'undefined' &&
+      window.location.hostname !== 'localhost' &&
+      window.location.hostname !== '127.0.0.1'
+    ) {
+      console.log('Skipping token fetch from localhost on non-localhost device')
+      return
+    }
+
     try {
       const endpointUrl = constructEndpointUrl(selectedEndpoint)
       const { token, valid_until } = await getTokenAPI(endpointUrl)

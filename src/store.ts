@@ -70,6 +70,8 @@ interface Store {
         prev: Record<string, ChatMessage[]>
       ) => Record<string, ChatMessage[]>)
   ) => void
+  isSidebarCollapsed: boolean
+  setIsSidebarCollapsed: (isCollapsed: boolean) => void
 }
 
 export const useStore = create<Store>()(
@@ -136,7 +138,10 @@ export const useStore = create<Store>()(
             typeof chatSessions === 'function'
               ? chatSessions(state.chatSessions)
               : chatSessions
-        }))
+        })),
+      isSidebarCollapsed: false,
+      setIsSidebarCollapsed: (isSidebarCollapsed) =>
+        set(() => ({ isSidebarCollapsed }))
     }),
     {
       name: 'chat-storage-v2',
