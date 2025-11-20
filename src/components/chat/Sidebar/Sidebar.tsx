@@ -107,6 +107,9 @@ const Sidebar = () => {
   const handleNewChat = () => {
     clearChat()
     focusChatInput()
+    if (isMobile) {
+      setIsCollapsed(true)
+    }
   }
 
   return (
