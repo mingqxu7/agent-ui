@@ -35,7 +35,7 @@ const MarkdownRenderer: FC<MarkdownRendererProps> = ({
 
 
   // Custom link component that handles question:// protocol
-  const LinkComponent = ({ node, href, children, ...props }: any) => {
+  const LinkComponent = ({ href, children, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement>) => {
     if (href?.startsWith('question://')) {
       const handleClick = async (e: React.MouseEvent) => {
         e.preventDefault()
@@ -65,7 +65,7 @@ const MarkdownRenderer: FC<MarkdownRendererProps> = ({
           tabIndex={0}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
-              handleClick(e as any)
+              handleClick(e as unknown as React.MouseEvent)
             }
           }}
           {...props}

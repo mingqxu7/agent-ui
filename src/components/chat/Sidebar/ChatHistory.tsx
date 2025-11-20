@@ -18,7 +18,6 @@ const ChatHistory = () => {
         chatSessions,
         setChatSessions,
         setMessages,
-        selectedEndpoint,
         isStreaming,
         setIsChatLoading
     } = useStore()

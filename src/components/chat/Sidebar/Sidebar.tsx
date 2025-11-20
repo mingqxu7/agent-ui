@@ -3,18 +3,15 @@ import { Button } from '@/components/ui/button'
 import useChatActions from '@/hooks/useChatActions'
 import useAuthToken from '@/hooks/useAuthToken'
 import { useStore } from '@/store'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { useState, useEffect } from 'react'
 import Icon from '@/components/ui/icon'
 import { getProviderIcon } from '@/lib/modelProvider'
 import ChatHistory from './ChatHistory'
-import { isValidUrl } from '@/lib/utils'
-import { toast } from 'sonner'
 import { useQueryState } from 'nuqs'
-import { truncateText } from '@/lib/utils'
 import { Skeleton } from '@/components/ui/skeleton'
 
-const ENDPOINT_PLACEHOLDER = 'NO ENDPOINT ADDED'
+
 const SidebarHeader = () => (
   <div className="flex items-center gap-2">
     <Icon type="agno" size="xs" />
@@ -52,13 +49,7 @@ const ModelDisplay = ({ model }: { model: string }) => (
 
 
 
-const Sidebar = ({
-  hasEnvToken,
-  envToken
-}: {
-  hasEnvToken?: boolean
-  envToken?: string
-}) => {
+const Sidebar = () => {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const { clearChat, focusChatInput, initialize } = useChatActions()
   const {

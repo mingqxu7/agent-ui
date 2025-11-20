@@ -183,7 +183,7 @@ const useWebSocketStreamHandler = ({ shouldAutoConnect = true }: { shouldAutoCon
       authToken,
       onMessage: (data) => {
         if (streamingSessionIdRef.current) {
-          handleWebSocketMessage(data, streamingSessionIdRef.current)
+          handleWebSocketMessage(data as WebSocketMessage, streamingSessionIdRef.current)
         }
       },
       onOpen: () => {
@@ -192,7 +192,7 @@ const useWebSocketStreamHandler = ({ shouldAutoConnect = true }: { shouldAutoCon
       onClose: () => {
         isConnectedRef.current = false
       },
-      onError: (error) => {
+      onError: () => {
         console.error('WebSocket connection failed')
         isConnectedRef.current = false
         setStreamingErrorMessage('WebSocket connection error')
@@ -266,7 +266,11 @@ const useWebSocketStreamHandler = ({ shouldAutoConnect = true }: { shouldAutoCon
       sendMessage,
       setIsStreaming,
       setStreamingErrorMessage,
-      updateMessagesWithErrorState
+      setIsStreaming,
+      setStreamingErrorMessage,
+      updateMessagesWithErrorState,
+      sessionId,
+      setSessionId
     ]
   )
 

@@ -41,6 +41,9 @@ importers:
       lucide-react:
         specifier: ^0.474.0
         version: 0.474.0(react@18.3.1)
+      mitt:
+        specifier: ^3.0.1
+        version: 3.0.1
       next:
         specifier: 15.2.3
         version: 15.2.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)

@@ -4,7 +4,7 @@ import { webSocketService } from '@/lib/websocket-service'
 interface WebSocketChatOptions {
   endpoint: string
   authToken?: string
-  onMessage: (data: any) => void
+  onMessage: (data: unknown) => void
   onOpen?: () => void
   onClose?: () => void
   onError?: (error: Event) => void
@@ -13,7 +13,7 @@ interface WebSocketChatOptions {
 export default function useWebSocketChat() {
   // We keep track of handlers to remove them on unmount
   const handlersRef = useRef<{
-    onMessage: ((data: any) => void) | null
+    onMessage: ((data: unknown) => void) | null
     onOpen: (() => void) | null
     onClose: (() => void) | null
     onError: ((error: Event) => void) | null
@@ -26,13 +26,14 @@ export default function useWebSocketChat() {
 
   useEffect(() => {
     console.log('useWebSocketChat mounted')
+    const handlers = handlersRef.current
     return () => {
       console.log('useWebSocketChat unmounted')
       // Cleanup handlers on unmount
-      if (handlersRef.current.onMessage) webSocketService.removeMessageHandler(handlersRef.current.onMessage)
-      if (handlersRef.current.onOpen) webSocketService.removeOpenHandler(handlersRef.current.onOpen)
-      if (handlersRef.current.onClose) webSocketService.removeCloseHandler(handlersRef.current.onClose)
-      if (handlersRef.current.onError) webSocketService.removeErrorHandler(handlersRef.current.onError)
+      if (handlers.onMessage) webSocketService.removeMessageHandler(handlers.onMessage)
+      if (handlers.onOpen) webSocketService.removeOpenHandler(handlers.onOpen)
+      if (handlers.onClose) webSocketService.removeCloseHandler(handlers.onClose)
+      if (handlers.onError) webSocketService.removeErrorHandler(handlers.onError)
     }
   }, [])
 
@@ -70,7 +71,7 @@ export default function useWebSocketChat() {
     []
   )
 
-  const sendMessage = useCallback(async (question: string, refData: Record<string, any> = {}) => {
+  const sendMessage = useCallback(async (question: string, refData: Record<string, unknown> = {}) => {
     return await webSocketService.sendMessage(question, refData)
   }, [])
 

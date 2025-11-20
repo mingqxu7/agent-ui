@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { motion, Variants } from 'framer-motion'
+import { motion } from 'framer-motion'
 import Icon from '@/components/ui/icon'
 import { IconType } from '@/components/ui/icon/types'
 import React, { useEffect, useState } from 'react'

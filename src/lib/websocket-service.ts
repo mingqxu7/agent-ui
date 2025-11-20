@@ -1,6 +1,5 @@
-import { toast } from 'sonner'
 
-type MessageHandler = (data: any) => void
+type MessageHandler = (data: unknown) => void
 type ConnectionHandler = () => void
 type ErrorHandler = (error: Event) => void
 
@@ -105,7 +104,7 @@ class WebSocketService {
         }
     }
 
-    public async sendMessage(message: string, refData: Record<string, any> = {}): Promise<boolean> {
+    public async sendMessage(message: string, refData: Record<string, unknown> = {}): Promise<boolean> {
         const payload = JSON.stringify({
             question: message,
             ref_data: refData
@@ -166,10 +165,10 @@ class WebSocketService {
         this.listeners.onError.delete(handler)
     }
 
-    private notifyListeners(type: keyof WebSocketListeners, data?: any) {
+    private notifyListeners(type: keyof WebSocketListeners, data?: unknown) {
         this.listeners[type].forEach((handler) => {
             try {
-                (handler as Function)(data)
+                (handler as (data?: unknown) => void)(data)
             } catch (error) {
                 console.error(`WebSocketService: Error in ${type} listener`, error)
             }
