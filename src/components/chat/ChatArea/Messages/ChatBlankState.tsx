@@ -87,7 +87,7 @@ const ChatBlankState = () => {
           className="md:hidden"
         >
           <span className="flex items-center justify-center gap-1 text-sm text-muted-foreground/80">
-            {isChinese ? '(点击 ' : '(Click '}
+            {isChinese ? '(点击左上 ' : '(Click upper left '}
             <Icon type="sheet" size="xs" className="inline-block rotate-180" />
             {isChinese ? ' 查看历史记录)' : ' to view chat history)'}
           </span>
