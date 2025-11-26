@@ -183,9 +183,54 @@ export const getTokenAPI = async (
     }
 
     const data = await response.json()
+
+    // Store expiration in Zustand for validation
+    // Note: Dynamic import to avoid circular dependency
+    if (typeof window !== 'undefined' && data.valid_until) {
+      import('@/store').then(({ useStore }) => {
+        useStore.getState().setTokenExpiresAt(data.valid_until)
+      })
+    }
+
     return data
   } catch (error) {
     console.error('Error fetching token:', error)
     return { token: null, valid_until: null }
+  }
+}
+
+/**
+ * Delete a session via HTTP streaming endpoint
+ * Used when useWebSocket is false (HTTP streaming mode)
+ */
+export const deleteHTTPSessionAPI = async (
+  endpoint: string,
+  sessionId: string,
+  authToken?: string
+): Promise<void> => {
+  const url = `${endpoint}/api/sessions/${sessionId}`
+
+  const response = await fetch(url, {
+    method: 'DELETE',
+    headers: createHeaders(authToken)
+  })
+
+  if (!response.ok) {
+    if (response.status === 403) {
+      throw new Error('Authentication failed')
+    }
+    if (response.status === 404) {
+      throw new Error('Session not found')
+    }
+    if (response.status === 400) {
+      const errorData = await response.json().catch(() => ({}))
+      if (
+        errorData.detail?.includes('metadata') ||
+        errorData.detail?.includes('legacy')
+      ) {
+        throw new Error('Legacy session format - cannot delete')
+      }
+    }
+    throw new Error(`Failed to delete session: ${response.statusText}`)
   }
 }

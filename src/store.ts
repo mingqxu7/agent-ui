@@ -38,6 +38,21 @@ interface Store {
   setSelectedEndpoint: (selectedEndpoint: string) => void
   authToken: string
   setAuthToken: (authToken: string) => void
+  tokenExpiresAt: number | null
+  setTokenExpiresAt: (timestamp: number | null) => void
+  authError: boolean
+  authErrorMessage: string | null
+  setAuthError: (error: boolean, message?: string | null) => void
+  interruptedSessionKey: string | null
+  setInterruptedSessionKey: (key: string | null) => void
+  httpSessionIdMap: Record<string, { backendId: string; timestamp: number }>
+  setHTTPSessionIdMap: (
+    map:
+      | Record<string, { backendId: string; timestamp: number }>
+      | ((
+          prev: Record<string, { backendId: string; timestamp: number }>
+        ) => Record<string, { backendId: string; timestamp: number }>)
+  ) => void
   agents: AgentDetails[]
   setAgents: (agents: AgentDetails[]) => void
   teams: TeamDetails[]
@@ -106,6 +121,22 @@ export const useStore = create<Store>()(
         set(() => ({ selectedEndpoint })),
       authToken: '',
       setAuthToken: (authToken) => set(() => ({ authToken })),
+      tokenExpiresAt: null,
+      setTokenExpiresAt: (timestamp) => set({ tokenExpiresAt: timestamp }),
+      authError: false,
+      authErrorMessage: null,
+      setAuthError: (error, message) =>
+        set({
+          authError: error,
+          authErrorMessage: message || null
+        }),
+      interruptedSessionKey: null,
+      setInterruptedSessionKey: (key) => set({ interruptedSessionKey: key }),
+      httpSessionIdMap: {},
+      setHTTPSessionIdMap: (map) =>
+        set((state) => ({
+          httpSessionIdMap: typeof map === 'function' ? map(state.httpSessionIdMap) : map
+        })),
       agents: [],
       setAgents: (agents) => set({ agents }),
       teams: [],
@@ -153,7 +184,9 @@ export const useStore = create<Store>()(
       partialize: (state) => ({
         useWebSocket: state.useWebSocket,
         sessionsData: state.sessionsData,
-        chatSessions: state.chatSessions
+        chatSessions: state.chatSessions,
+        httpSessionIdMap: state.httpSessionIdMap
+        // DO NOT persist: authToken, tokenExpiresAt, authError, authErrorMessage, interruptedSessionKey
       }),
       onRehydrateStorage: () => (state) => {
         state?.setHydrated?.()

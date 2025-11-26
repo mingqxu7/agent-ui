@@ -8,6 +8,10 @@ import { Button } from '@/components/ui/button'
 import { motion, AnimatePresence } from 'framer-motion'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
+import { deleteHTTPSessionAPI } from '@/api/os'
+import { constructEndpointUrl } from '@/lib/constructEndpointUrl'
+import useAuthToken from '@/hooks/useAuthToken'
+import { toast } from 'sonner'
 
 dayjs.extend(relativeTime)
 
@@ -32,7 +36,13 @@ const ChatHistory = ({ onChatSelect }: ChatHistoryProps) => {
         setChatSessions,
         setMessages,
         isStreaming,
-        setIsChatLoading
+        setIsChatLoading,
+        useWebSocket,
+        selectedEndpoint,
+        authToken,
+        httpSessionIdMap,
+        setHTTPSessionIdMap,
+        setAuthError
     } = useStore()
     const [sessionId, setSessionId] = useQueryState('session')
     const [, setAgentId] = useQueryState('agent')
@@ -40,6 +50,8 @@ const ChatHistory = ({ onChatSelect }: ChatHistoryProps) => {
     const [isMobile, setIsMobile] = useState(false)
     const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false)
     const [sessionToDelete, setSessionToDelete] = useState<string | null>(null)
+    const [isDeleting, setIsDeleting] = useState(false)
+    const { validateToken } = useAuthToken()
 
     useEffect(() => {
         const checkMobile = () => {
@@ -75,29 +87,108 @@ const ChatHistory = ({ onChatSelect }: ChatHistoryProps) => {
         setDeleteConfirmationOpen(true)
     }
 
-    const confirmDelete = () => {
+    const confirmDelete = async () => {
         if (!sessionToDelete) return
 
-        // Remove from sessionsData
-        setSessionsData((prev) =>
-            prev ? prev.filter((s) => s.session_id !== sessionToDelete) : []
-        )
+        setIsDeleting(true)
 
-        // Remove from chatSessions
-        setChatSessions((prev) => {
-            const newState = { ...prev }
-            delete newState[sessionToDelete]
-            return newState
-        })
+        try {
+            // If using HTTP streaming mode (not WebSocket), delete from backend first
+            if (!useWebSocket) {
+                // Validate token first
+                if (!validateToken()) {
+                    setAuthError(
+                        true,
+                        'Please refresh your token to delete this session.'
+                    )
+                    setDeleteConfirmationOpen(false)
+                    setSessionToDelete(null)
+                    setIsDeleting(false)
+                    return
+                }
 
-        // If current session is deleted, clear messages
-        if (sessionId === sessionToDelete) {
-            setSessionId(null)
-            setMessages([])
+                // Look up backend session ID from mapping
+                const mappingEntry = httpSessionIdMap[sessionToDelete]
+
+                if (mappingEntry) {
+                    const backendSessionId = mappingEntry.backendId
+
+                    try {
+                        // Delete from backend
+                        const endpoint = constructEndpointUrl(selectedEndpoint)
+                        await deleteHTTPSessionAPI(endpoint, backendSessionId, authToken || undefined)
+
+                        // Success - cleanup mapping
+                        setHTTPSessionIdMap((prev) => {
+                            const newMap = { ...prev }
+                            delete newMap[sessionToDelete]
+                            return newMap
+                        })
+
+                        toast.success('Session deleted successfully')
+                    } catch (error) {
+                        // Handle different error types
+                        if (error instanceof Error) {
+                            if (error.message.includes('Authentication failed')) {
+                                setAuthError(
+                                    true,
+                                    'Session expired. Please refresh your token to delete this session.'
+                                )
+                                setDeleteConfirmationOpen(false)
+                                setSessionToDelete(null)
+                                setIsDeleting(false)
+                                return
+                            } else if (
+                                error.message.includes('Session not found') ||
+                                error.message.includes('Legacy session')
+                            ) {
+                                // 404 or 400 legacy - Clean up locally
+                                console.log('Backend session not found (404/400), cleaning up locally')
+                                setHTTPSessionIdMap((prev) => {
+                                    const newMap = { ...prev }
+                                    delete newMap[sessionToDelete]
+                                    return newMap
+                                })
+                                toast.info('Session cleaned up locally')
+                            } else {
+                                toast.error('Failed to delete session: ' + error.message)
+                                setIsDeleting(false)
+                                return
+                            }
+                        }
+                    }
+                } else {
+                    // No backend mapping - delete locally only
+                    console.log('No backend mapping found, deleting locally')
+                }
+            }
+
+            // Remove from sessionsData
+            setSessionsData((prev) =>
+                prev ? prev.filter((s) => s.session_id !== sessionToDelete) : []
+            )
+
+            // Remove from chatSessions
+            setChatSessions((prev) => {
+                const newState = { ...prev }
+                delete newState[sessionToDelete]
+                return newState
+            })
+
+            // If current session is deleted, clear messages
+            if (sessionId === sessionToDelete) {
+                setSessionId(null)
+                setMessages([])
+            }
+
+            setDeleteConfirmationOpen(false)
+            setSessionToDelete(null)
+        } catch (error) {
+            console.error('Error during delete:', error)
+            toast.error('An unexpected error occurred')
+        } finally {
+            setIsDeleting(false)
         }
-
-        setDeleteConfirmationOpen(false)
-        setSessionToDelete(null)
     }
 
     if (!sessionsData || sessionsData.length === 0) {
@@ -170,11 +261,15 @@ const ChatHistory = ({ onChatSelect }: ChatHistoryProps) => {
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setDeleteConfirmationOpen(false)}>
+                        <Button
+                            variant="outline"
+                            onClick={() => setDeleteConfirmationOpen(false)}
+                            disabled={isDeleting}
+                        >
                             Cancel
                         </Button>
-                        <Button variant="destructive" onClick={confirmDelete}>
-                            Delete
+                        <Button variant="destructive" onClick={confirmDelete} disabled={isDeleting}>
+                            {isDeleting ? 'Deleting...' : 'Delete'}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

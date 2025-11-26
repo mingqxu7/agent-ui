@@ -86,10 +86,48 @@ export default function useAuthToken() {
     fetchToken()
   }, [fetchToken])
 
+  // Validate token before use
+  const validateToken = useCallback(() => {
+    if (!authToken) {
+      console.warn('No auth token available')
+      return false
+    }
+
+    // Check if we have valid_until stored
+    const tokenExpiresAt = useStore.getState().tokenExpiresAt
+    if (tokenExpiresAt) {
+      const now = Math.floor(Date.now() / 1000)
+      const timeUntilExpiry = tokenExpiresAt - now
+
+      if (timeUntilExpiry < 60) {
+        // Token expires in less than 1 minute
+        console.warn('Token expired or expiring very soon')
+        return false
+      }
+    }
+
+    return true
+  }, [authToken])
+
+  // Clear token on auth error
+  const clearToken = useCallback(() => {
+    console.log('Clearing auth token')
+    setAuthToken('')
+    useStore.getState().setTokenExpiresAt(null)
+
+    // Clear refresh timer
+    if (refreshTimerRef.current) {
+      clearTimeout(refreshTimerRef.current)
+      refreshTimerRef.current = null
+    }
+  }, [setAuthToken])
+
   return {
     token: authToken,
     refreshToken,
     hasToken: !!authToken,
-    isLoading
+    isLoading,
+    validateToken,
+    clearToken
   }
 }
