@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Icon from '@/components/ui/icon'
 
 const DISMISS_KEY = 'migration-notice-dismissed-entu'
-const NEW_SITE_URL = 'https://entu.lw4ever.net'
+const NEW_SITE_URL = 'https://entu.lw4ever.net/?src=gotq'
 
 // Prerendered as static HTML, so the first paint has no window/localStorage
 // -- default hidden to match that, then useEffect (runs once, after mount)
