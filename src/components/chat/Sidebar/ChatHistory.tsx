@@ -220,13 +220,13 @@ const ChatHistory = ({ onChatSelect }: ChatHistoryProps) => {
                 </div>
                 <Button
                     variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 text-muted-foreground hover:bg-primary/5 hover:text-primary"
-                    aria-label="Export chats"
+                    size="sm"
+                    className="h-6 gap-1 px-1.5 text-xs text-muted-foreground hover:bg-primary/5 hover:text-primary"
                     title="Export chats"
                     onClick={() => setExportDialogOpen(true)}
                 >
                     <Icon type="download" size="xs" />
+                    导出会话
                 </Button>
             </div>
             <div className="flex flex-col gap-1 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-primary/10 hover:scrollbar-thumb-primary/20">
@@ -313,7 +313,10 @@ const ChatHistory = ({ onChatSelect }: ChatHistoryProps) => {
                         <Button variant="outline" onClick={() => handleExport('json')}>
                             JSON
                         </Button>
-                        <Button onClick={() => handleExport('markdown')}>
+                        <Button
+                            className="text-primaryAccent"
+                            onClick={() => handleExport('markdown')}
+                        >
                             Markdown
                         </Button>
                     </DialogFooter>

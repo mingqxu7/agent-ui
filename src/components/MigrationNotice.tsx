@@ -50,7 +50,7 @@ function MigrationNotice() {
           </a>
         </div>
         <div className="rounded bg-primary/15 px-3 py-1 text-sm font-bold underline decoration-2 underline-offset-2 sm:text-base">
-          ⭐ 关闭本提示前，请先收藏新网址，以便日后访问
+          ⭐ 关闭本提示前，请先收藏新网址，并点击左侧菜单「导出会话」保存您的聊天记录
         </div>
       </div>
       <button
