@@ -12,6 +12,7 @@ import { deleteHTTPSessionAPI } from '@/api/os'
 import { constructEndpointUrl } from '@/lib/constructEndpointUrl'
 import useAuthToken from '@/hooks/useAuthToken'
 import { toast } from 'sonner'
+import { downloadSessions, type ExportFormat } from '@/lib/exportSessions'
 
 dayjs.extend(relativeTime)
 
@@ -51,6 +52,7 @@ const ChatHistory = ({ onChatSelect }: ChatHistoryProps) => {
     const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false)
     const [sessionToDelete, setSessionToDelete] = useState<string | null>(null)
     const [isDeleting, setIsDeleting] = useState(false)
+    const [exportDialogOpen, setExportDialogOpen] = useState(false)
     const { validateToken } = useAuthToken()
 
     useEffect(() => {
@@ -200,10 +202,32 @@ const ChatHistory = ({ onChatSelect }: ChatHistoryProps) => {
         (a, b) => (b.updated_at || 0) - (a.updated_at || 0)
     )
 
+    const handleExport = (format: ExportFormat) => {
+        try {
+            downloadSessions(format, sortedSessions, chatSessions)
+            setExportDialogOpen(false)
+        } catch (error) {
+            console.error('Error exporting chats:', error)
+            toast.error('Failed to export chats')
+        }
+    }
+
     return (
         <div className="flex w-full flex-col gap-2 overflow-hidden">
-            <div className="text-xs font-medium uppercase text-primary">
-                Chats
+            <div className="flex items-center justify-between">
+                <div className="text-xs font-medium uppercase text-primary">
+                    Chats
+                </div>
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 text-muted-foreground hover:bg-primary/5 hover:text-primary"
+                    aria-label="Export chats"
+                    title="Export chats"
+                    onClick={() => setExportDialogOpen(true)}
+                >
+                    <Icon type="download" size="xs" />
+                </Button>
             </div>
             <div className="flex flex-col gap-1 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-primary/10 hover:scrollbar-thumb-primary/20">
                 <AnimatePresence initial={false}>
@@ -270,6 +294,27 @@ const ChatHistory = ({ onChatSelect }: ChatHistoryProps) => {
                         </Button>
                         <Button variant="destructive" onClick={confirmDelete} disabled={isDeleting}>
                             {isDeleting ? 'Deleting...' : 'Delete'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={exportDialogOpen} onOpenChange={setExportDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Export Chats</DialogTitle>
+                        <DialogDescription>
+                            Download all {sortedSessions.length} chats as a file.
+                            Markdown is easy to read; JSON keeps the full data,
+                            including references.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => handleExport('json')}>
+                            JSON
+                        </Button>
+                        <Button onClick={() => handleExport('markdown')}>
+                            Markdown
                         </Button>
                     </DialogFooter>
                 </DialogContent>
