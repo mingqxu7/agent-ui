@@ -208,7 +208,7 @@ const ChatHistory = ({ onChatSelect }: ChatHistoryProps) => {
             setExportDialogOpen(false)
         } catch (error) {
             console.error('Error exporting chats:', error)
-            toast.error('Failed to export chats')
+            toast.error('导出会话失败')
         }
     }
 
@@ -222,7 +222,7 @@ const ChatHistory = ({ onChatSelect }: ChatHistoryProps) => {
                     variant="ghost"
                     size="sm"
                     className="h-6 gap-1 px-1.5 text-xs text-muted-foreground hover:bg-primary/5 hover:text-primary"
-                    title="Export chats"
+                    title="导出会话"
                     onClick={() => setExportDialogOpen(true)}
                 >
                     <Icon type="download" size="xs" />
@@ -302,22 +302,21 @@ const ChatHistory = ({ onChatSelect }: ChatHistoryProps) => {
             <Dialog open={exportDialogOpen} onOpenChange={setExportDialogOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Export Chats</DialogTitle>
+                        <DialogTitle>导出会话</DialogTitle>
                         <DialogDescription>
-                            Download all {sortedSessions.length} chats as a file.
-                            Markdown is easy to read; JSON keeps the full data,
-                            including references.
+                            将全部 {sortedSessions.length} 个会话下载为文件。
+                            Markdown 格式便于阅读；JSON 格式保留完整数据（含参考资料），适合备份。
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => handleExport('json')}>
-                            JSON
+                            JSON（完整备份）
                         </Button>
                         <Button
                             className="text-primaryAccent"
                             onClick={() => handleExport('markdown')}
                         >
-                            Markdown
+                            Markdown（便于阅读）
                         </Button>
                     </DialogFooter>
                 </DialogContent>
