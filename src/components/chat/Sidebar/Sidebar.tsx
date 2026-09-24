@@ -117,7 +117,7 @@ const Sidebar = () => {
   return (
     <>
       <motion.aside
-        className={`absolute z-50 flex h-screen shrink-0 grow-0 flex-col overflow-hidden bg-background px-2 py-3 font-dmmono md:relative md:border-none ${isSidebarCollapsed ? 'border-none' : 'border-r'}`}
+        className={`absolute z-50 flex h-full shrink-0 grow-0 flex-col overflow-hidden bg-background px-2 py-3 font-dmmono md:relative md:border-none ${isSidebarCollapsed ? 'border-none' : 'border-r'}`}
         initial={{ width: '16rem' }}
         animate={{ width: isSidebarCollapsed ? (isMobile ? 0 : '2.5rem') : '16rem' }}
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
@@ -193,7 +193,7 @@ const Sidebar = () => {
       {isMounted && isMobile && isSidebarCollapsed && (
         <Button
           onClick={() => setIsSidebarCollapsed(false)}
-          className="fixed left-4 top-4 z-50 h-10 w-10 rounded-xl bg-background border shadow-sm md:hidden"
+          className="absolute left-4 top-4 z-50 h-10 w-10 rounded-xl bg-background border shadow-sm md:hidden"
           size="icon"
           variant="ghost"
         >
